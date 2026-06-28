@@ -1,4 +1,4 @@
-const FEED_URL = "https://clients.automanager.com/2d959d0cddca482ca29ed95900a4f9f2/inventory.xml?ID=&Features=1&Photos=1";
+const FEED_URL = "http://clients.automanager.com/014700/inventory.xml?ID=014700&Features=1&Photos=1";
 
 exports.handler = async function(event) {
 const headers = {
