@@ -1,0 +1,474 @@
+1 selected 
+
+Skip to content
+Using Gmail with screen readers
+1 of 34,359
+(no subject)
+Inbox
+
+Solomon Mpalanyi <mpalanyis17@gmail.com>
+Attachments
+6:46 PM (0 minutes ago)
+to me
+
+
+
+
+Sent from my iPhone
+ One attachment
+  •  Scanned by Gmail
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAO Inspection Manager</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #0F2035; --navy-mid: #1A3A5C; --blue: #2563EB; --blue-light: #EFF6FF;
+  --steel: #334155; --muted: #64748B; --border: #E2E8F0; --bg: #F8FAFC; --white: #FFFFFF;
+  --green: #16A34A; --green-bg: #DCFCE7; --amber: #D97706; --amber-bg: #FEF3C7;
+  --red: #DC2626; --red-bg: #FEE2E2; --purple: #7C3AED; --purple-bg: #EDE9FE;
+  --teal: #0D9488; --teal-bg: #CCFBF1; --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08); --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+}
+body { font-family: system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--steel); -webkit-font-smoothing:antialiased; }
+.view { display:none; } .view.active { display:block; }
+.app-header { background:var(--navy); padding:14px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.app-header h1 { color:#fff; font-size:15px; font-weight:700; }
+.app-header .sub { color:#94A3B8; font-size:11px; margin-top:1px; }
+.sync-btn { background:var(--blue); color:#fff; border:none; border-radius:8px; padding:7px 13px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.sync-btn:hover { background:#1D4ED8; } .sync-btn:disabled { background:#94A3B8; cursor:not-allowed; }
+.spin { animation:spin .8s linear infinite; display:inline-block; } @keyframes spin { to { transform:rotate(360deg); } }
+.stats-bar { display:grid; grid-template-columns:repeat(6,1fr); border-bottom:1px solid var(--border); background:var(--white); }
+.stat-item { padding:10px 6px; text-align:center; border-right:1px solid var(--border); }
+.stat-item:last-child { border-right:none; }
+.stat-num { font-size:18px; font-weight:700; color:var(--navy-mid); line-height:1; }
+.stat-lbl { font-size:10px; color:var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:.03em; }
+.toolbar { padding:10px 12px; display:flex; gap:8px; align-items:center; background:var(--white); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.search-wrap { position:relative; flex:1; min-width:160px; }
+.search-wrap input { width:100%; padding:7px 10px 7px 30px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--bg); outline:none; }
+.search-wrap input:focus { border-color:var(--blue); }
+.search-icon { position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; }
+.filter-sel { border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:12px; background:var(--bg); cursor:pointer; outline:none; }
+.add-btn { background:var(--navy-mid); color:#fff; border:none; border-radius:8px; padding:7px 12px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.vehicle-list { padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+.v-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); cursor:pointer; transition:box-shadow .15s; }
+.v-card:hover { box-shadow:var(--shadow-md); }
+.v-card-header { padding:12px 14px; display:flex; align-items:center; gap:12px; }
+.v-icon { width:36px; height:36px; border-radius:8px; background:var(--blue-light); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+.v-icon.sold-icon { background:var(--red-bg); }
+.v-info { flex:1; min-width:0; }
+.v-name { font-size:14px; font-weight:600; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.v-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.v-badges { display:flex; gap:5px; flex-wrap:wrap; flex-shrink:0; }
+.badge { font-size:10px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+.badge-pending { background:var(--amber-bg); color:var(--amber); }
+.badge-inspected { background:var(--blue-light); color:var(--blue); }
+.badge-parts { background:var(--teal-bg); color:var(--teal); }
+.badge-pend-svc { background:var(--purple-bg); color:var(--purple); }
+.badge-serviced { background:var(--green-bg); color:var(--green); }
+.badge-sold { background:var(--red-bg); color:var(--red); }
+.v-arrow { color:var(--muted); font-size:16px; flex-shrink:0; }
+.empty-state { text-align:center; padding:48px 20px; color:var(--muted); }
+.empty-state .e-icon { font-size:40px; margin-bottom:10px; }
+.empty-state p { font-size:14px; line-height:1.6; }
+.empty-state .e-sub { font-size:12px; margin-top:6px; }
+.detail-header { background:var(--navy); padding:14px 16px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:50; }
+.back-btn { background:rgba(255,255,255,.12); color:#fff; border:none; border-radius:7px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap; }
+.back-btn:hover { background:rgba(255,255,255,.2); }
+.detail-title { color:#fff; font-size:14px; font-weight:700; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.detail-title .d-sub { color:#94A3B8; font-size:11px; font-weight:400; margin-top:1px; white-space:normal; }
+.detail-body { padding:12px; display:flex; flex-direction:column; gap:10px; padding-bottom:80px; }
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); }
+.info-cell { background:var(--white); padding:10px 12px; }
+.info-cell .lbl { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:2px; }
+.info-cell .val { font-size:13px; font-weight:600; color:var(--navy); word-break:break-all; }
+.section-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.section-hdr { padding:10px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); }
+.section-hdr.int { border-left:3px solid var(--red); }
+.section-hdr.ext { border-left:3px solid var(--green); }
+.section-hdr.mech { border-left:3px solid var(--teal); }
+.section-hdr.parts { border-left:3px solid var(--amber); }
+.section-hdr.stat-sec { border-left:3px solid var(--purple); }
+.section-hdr.notes-sec { border-left:3px solid var(--muted); }
+.s-icon { font-size:15px; }
+.s-title { font-size:13px; font-weight:600; color:var(--navy); flex:1; }
+.section-body { padding:12px 14px; }
+textarea.insp { width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-size:13px; font-family:inherit; color:var(--steel); resize:vertical; min-height:80px; line-height:1.5; outline:none; background:var(--bg); }
+textarea.insp:focus { border-color:var(--blue); background:var(--white); }
+.toggle-lbl { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
+.toggle-group { display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:10px; }
+.tog-btn { flex:1; border:none; padding:8px 4px; font-size:11px; font-weight:600; cursor:pointer; background:var(--bg); color:var(--muted); transition:all .15s; text-align:center; }
+.tog-btn+.tog-btn { border-left:1px solid var(--border); }
+.tog-btn.a0 { background:var(--amber-bg); color:var(--amber); }
+.tog-btn.a1 { background:var(--blue-light); color:var(--blue); }
+.tog-btn.a2 { background:var(--teal-bg); color:var(--teal); }
+.tog-btn.a3 { background:var(--red-bg); color:var(--red); }
+.tog-btn.b0 { background:var(--purple-bg); color:var(--purple); }
+.tog-btn.b1 { background:var(--green-bg); color:var(--green); }
+.tog-btn.b2 { background:var(--red-bg); color:var(--red); }
+.parts-grid { display:flex; flex-direction:column; gap:6px; }
+.part-row-hdr { display:grid; grid-template-columns:2fr 1.5fr 1fr 36px; gap:6px; padding:0 2px; margin-bottom:2px; }
+.part-row-hdr span { font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+.part-row { display:grid; grid-template-columns:2fr 1.5fr 1fr 36px; gap:6px; align-items:center; }
+.part-row input { width:100%; border:1px solid var(--border); border-radius:7px; padding:7px 8px; font-size:12px; font-family:inherit; outline:none; background:var(--bg); }
+.part-row input:focus { border-color:var(--blue); background:var(--white); }
+.del-part { background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px; padding:4px; border-radius:6px; }
+.del-part:hover { color:var(--red); }
+.add-part-btn { margin-top:8px; background:none; border:1px dashed var(--border); border-radius:8px; padding:7px; width:100%; font-size:12px; color:var(--muted); cursor:pointer; transition:all .15s; }
+.add-part-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+.parts-total { margin-top:8px; text-align:right; font-size:13px; color:var(--muted); border-top:1px solid var(--border); padding-top:8px; }
+.parts-total strong { color:var(--navy); }
+.save-bar { display:flex; align-items:center; gap:8px; padding:12px 16px; border-top:1px solid var(--border); background:var(--white); position:fixed; bottom:0; left:0; right:0; z-index:40; }
+.save-main { flex:1; background:var(--navy-mid); color:#fff; border:none; border-radius:8px; padding:11px; font-size:13px; font-weight:600; cursor:pointer; }
+.save-main:hover { background:var(--navy); }
+.del-vehicle { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:11px 14px; font-size:12px; cursor:pointer; }
+.del-vehicle:hover { border-color:var(--red); color:var(--red); }
+.saved-msg { font-size:12px; color:var(--green); display:none; white-space:nowrap; }
+.sync-status { padding:8px 12px; font-size:12px; text-align:center; border-bottom:1px solid var(--border); display:none; }
+.sync-status.info { background:var(--blue-light); color:var(--blue); }
+.sync-status.success { background:var(--green-bg); color:var(--green); }
+.sync-status.error { background:var(--red-bg); color:var(--red); }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; padding:16px; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--white); border-radius:var(--radius); width:100%; max-width:360px; box-shadow:var(--shadow-md); }
+.modal-hdr { padding:14px 16px; background:var(--navy); display:flex; align-items:center; justify-content:space-between; border-radius:var(--radius) var(--radius) 0 0; }
+.modal-hdr h3 { color:#fff; font-size:14px; font-weight:700; }
+.modal-close { background:none; border:none; color:#94A3B8; cursor:pointer; font-size:18px; }
+.modal-body { padding:16px; display:flex; flex-direction:column; gap:10px; }
+.m-field label { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); display:block; margin-bottom:4px; }
+.m-field input { width:100%; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13px; outline:none; }
+.m-field input:focus { border-color:var(--blue); }
+.m-row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.modal-foot { padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+.modal-foot button { font-size:13px; padding:8px 16px; border-radius:8px; cursor:pointer; border:1px solid var(--border); background:var(--bg); }
+.modal-foot .btn-primary { background:var(--navy-mid); color:#fff; border-color:var(--navy-mid); }
+</style>
+</head>
+<body>
+
+<div id="view-list" class="view active">
+  <div class="app-header">
+    <div>
+      <h1>🚗 IAO Inspection Manager</h1>
+      <div class="sub" id="header-sub">Loading inventory…</div>
+    </div>
+    <button class="sync-btn" id="sync-btn" onclick="syncFeed()">
+      <span id="sync-icon">⟳</span> Sync Feed
+    </button>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-item"><div class="stat-num" id="s-pending">0</div><div class="stat-lbl">Pending</div></div>
+    <div class="stat-item"><div class="stat-num" id="s-insp">0</div><div class="stat-lbl">Inspected</div></div>
+    <div class="stat-item"><div class="stat-num" id="s-psvc">0</div><div class="stat-lbl">Pend.Svc</div></div>
+    <div class="stat-item"><div class="stat-num" id="s-svc">0</div><div class="stat-lbl">Serviced</div></div>
+    <div class="stat-item"><div class="stat-num" id="s-cost">$0</div><div class="stat-lbl">Parts $</div></div>
+  </div>
+  <div class="sync-status" id="sync-status"></div>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="search" id="search-input" placeholder="Search VIN, make, model, stock…" oninput="renderList()">
+    </div>
+    <select class="filter-sel" id="filter-insp" onchange="renderList()">
+      <option value="">All inspection</option>
+      <option value="Pending Inspection">Pending</option>
+      <option value="Inspected">Inspected</option>
+      <option value="Parts Logged">Parts Logged</option>
+      <option value="Sold">Sold</option>
+    </select>
+    <select class="filter-sel" id="filter-svc" onchange="renderList()">
+      <option value="">All service</option>
+      <option value="Pending Service">Pending Svc</option>
+      <option value="Serviced">Serviced</option>
+    </select>
+    <button class="add-btn" onclick="openAddModal()">+ Add</button>
+  </div>
+  <div class="vehicle-list" id="vehicle-list"></div>
+</div>
+
+<div id="view-detail" class="view">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="detail-title">
+      <div id="d-title">Vehicle</div>
+      <div class="d-sub" id="d-sub"></div>
+    </div>
+  </div>
+  <div class="detail-body" id="detail-body"></div>
+</div>
+
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>Add vehicle manually</h3>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="m-row2">
+        <div class="m-field"><label>Year</label><input id="m-year" type="number" placeholder="2022"></div>
+        <div class="m-field"><label>Make</label><input id="m-make" placeholder="Ford"></div>
+      </div>
+      <div class="m-row2">
+        <div class="m-field"><label>Model</label><input id="m-model" placeholder="F-150"></div>
+        <div class="m-field"><label>Mileage</label><input id="m-mileage" type="number" placeholder="34200"></div>
+      </div>
+      <div class="m-field"><label>VIN</label><input id="m-vin" placeholder="1HGBH41JXMN109186"></div>
+      <div class="m-row2">
+        <div class="m-field"><label>Stock #</label><input id="m-stock" placeholder="A1234"></div>
+        <div class="m-field"><label>Color</label><input id="m-color" placeholder="Silver"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button onclick="closeAddModal()">Cancel</button>
+      <button class="btn-primary" onclick="addManual()">Add vehicle</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FEED_URL    = "https://clients.automanager.com/2d959d0cddca482ca29ed95900a4f9f2/inventory.xml?ID=&Features=1&Photos=1";
+const PROXY_URL   = "/.netlify/functions/proxy";
+const STORAGE_KEY = "iao_v4";
+let vehicles = [], currentVIN = null, lastSync = null;
+
+function loadLocal(){ try{ vehicles=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); }catch(e){ vehicles=[]; } }
+function saveLocal(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(vehicles)); }catch(e){} }
+function findV(vin){ return vehicles.find(v=>v.vin===vin); }
+
+function updateStats(){
+  document.getElementById("s-total").textContent   = vehicles.length;
+  document.getElementById("s-pending").textContent  = vehicles.filter(v=>v.inspStatus==="Pending Inspection").length;
+  document.getElementById("s-insp").textContent     = vehicles.filter(v=>v.inspStatus==="Inspected").length;
+  document.getElementById("s-psvc").textContent     = vehicles.filter(v=>v.svcStatus==="Pending Service").length;
+  document.getElementById("s-svc").textContent      = vehicles.filter(v=>v.svcStatus==="Serviced").length;
+  const tot=vehicles.reduce((s,v)=>s+(v.parts||[]).reduce((ps,p)=>ps+(parseFloat(p.cost)||0),0),0);
+  document.getElementById("s-cost").textContent     = "$"+Math.round(tot).toLocaleString();
+  document.getElementById("header-sub").textContent = vehicles.length+" vehicles · Last sync: "+(lastSync||"never");
+}
+
+async function syncFeed(){
+  const btn=document.getElementById("sync-btn"), icon=document.getElementById("sync-icon");
+  const st=document.getElementById("sync-status");
+  btn.disabled=true; icon.innerHTML='<span class="spin">⟳</span>';
+  st.className="sync-status info"; st.style.display="block";
+  st.textContent="Fetching live inventory from AutoManager…";
+  try{
+    const res=await fetch(PROXY_URL,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6",max_tokens:1000,
+        tools:[{type:"web_search_20250305",name:"web_search"}],
+        messages:[{role:"user",content:`Fetch this AutoManager XML inventory feed and extract every vehicle: ${FEED_URL}\n\nReturn ONLY a raw JSON array. Each object must have: vin (string), year (integer), make (string), model (string), mileage (integer), stock (string), color (string), createdDate (YYYY-MM-DD). Use "" for missing strings, 0 for missing numbers. Start with [ end with ]. No markdown, no explanation.`}]
+      })
+    });
+    const data=await res.json();
+    const text=(data.content||[]).map(b=>b.type==="text"?b.text:"").join("");
+    const match=text.match(/\[[\s\S]*?\]/);
+    if(!match) throw new Error("Could not parse vehicle data from feed.");
+    const feed=JSON.parse(match[0]);
+    if(!Array.isArray(feed)||!feed.length) throw new Error("Feed returned no vehicles.");
+    const feedVINs=new Set(feed.map(v=>v.vin).filter(Boolean));
+    let added=0,marked=0;
+    vehicles.forEach(v=>{ if(v.vin&&!feedVINs.has(v.vin)&&v.inspStatus!=="Sold"){ v.inspStatus="Sold"; v.svcStatus="Sold"; marked++; } });
+    const existVINs=new Set(vehicles.map(v=>v.vin));
+    feed.forEach(fv=>{
+      if(!fv.vin) return;
+      if(!existVINs.has(fv.vin)){
+        vehicles.push({vin:fv.vin,year:fv.year||"",make:fv.make||"",model:fv.model||"",
+          mileage:fv.mileage||0,stock:fv.stock||"",color:fv.color||"",
+          dateAdded:fv.createdDate||new Date().toISOString().split("T")[0],
+          inspStatus:"Pending Inspection",svcStatus:"Pending Service",
+          interior:"",exterior:"",mechanical:"",parts:[],notes:""});
+        added++;
+      } else {
+        const ex=findV(fv.vin);
+        if(ex){ ex.year=fv.year||ex.year; ex.make=fv.make||ex.make; ex.model=fv.model||ex.model;
+          ex.mileage=fv.mileage||ex.mileage; ex.stock=fv.stock||ex.stock; ex.color=fv.color||ex.color;
+          if(ex.inspStatus==="Sold"){ ex.inspStatus="Pending Inspection"; ex.svcStatus="Pending Service"; } }
+      }
+    });
+    saveLocal(); lastSync=new Date().toLocaleTimeString();
+    st.className="sync-status success";
+    st.textContent="✓ "+feed.length+" vehicles synced · "+added+" new · "+marked+" marked sold";
+    setTimeout(()=>st.style.display="none",5000);
+  }catch(e){
+    st.className="sync-status error";
+    st.textContent="⚠ Sync failed: "+e.message;
+  }
+  btn.disabled=false; icon.innerHTML="⟳";
+  updateStats(); renderList();
+}
+
+function getIB(v){
+  if(v.inspStatus==="Sold") return {cls:"badge-sold",label:"Sold"};
+  if((v.parts||[]).length>0) return {cls:"badge-parts",label:"Parts"};
+  if(v.interior||v.exterior||v.mechanical) return {cls:"badge-inspected",label:"Inspected"};
+  return {cls:"badge-pending",label:"Pending"};
+}
+function getSB(v){
+  if(v.svcStatus==="Sold") return {cls:"badge-sold",label:"Sold"};
+  if(v.svcStatus==="Serviced") return {cls:"badge-serviced",label:"Serviced"};
+  return {cls:"badge-pend-svc",label:"Pend.Svc"};
+}
+function renderList(){
+  const q=(document.getElementById("search-input").value||"").toLowerCase();
+  const fi=document.getElementById("filter-insp").value;
+  const fs=document.getElementById("filter-svc").value;
+  const sorted=[...vehicles].sort((a,b)=>{
+    const as=a.inspStatus==="Sold"?1:0,bs=b.inspStatus==="Sold"?1:0;
+    if(as!==bs) return as-bs;
+    return (b.dateAdded||"").localeCompare(a.dateAdded||"");
+  });
+  const filtered=sorted.filter(v=>{
+    const txt=`${v.vin} ${v.make} ${v.model} ${v.stock} ${v.year} ${v.color}`.toLowerCase();
+    if(q&&!txt.includes(q)) return false;
+    if(fi&&v.inspStatus!==fi) return false;
+    if(fs&&v.svcStatus!==fs) return false;
+    return true;
+  });
+  const list=document.getElementById("vehicle-list");
+  if(!filtered.length){
+    list.innerHTML=!vehicles.length
+      ?`<div class="empty-state"><div class="e-icon">🚗</div><p>No vehicles yet.</p><p class="e-sub">Tap <strong>Sync Feed</strong> to load your AutoManager inventory.</p></div>`
+      :`<div class="empty-state"><div class="e-icon">🔍</div><p>No vehicles match your search.</p></div>`;
+    updateStats(); return;
+  }
+  list.innerHTML=filtered.map(v=>{
+    const ib=getIB(v),sb=getSB(v);
+    const mil=v.mileage?Number(v.mileage).toLocaleString()+" mi":"";
+    return `<div class="v-card" onclick="openDetail('${esc(v.vin)}')">
+      <div class="v-card-header">
+        <div class="v-icon ${v.inspStatus==="Sold"?"sold-icon":""}">🚙</div>
+        <div class="v-info">
+          <div class="v-name">${v.year} ${esc(v.make)} ${esc(v.model)}</div>
+          <div class="v-meta">${[mil,v.stock?"#"+v.stock:"",v.color].filter(Boolean).join(" · ")}</div>
+        </div>
+        <div class="v-badges">
+          <span class="badge ${ib.cls}">${ib.label}</span>
+          <span class="badge ${sb.cls}">${sb.label}</span>
+        </div>
+        <span class="v-arrow">›</span>
+      </div>
+    </div>`;
+  }).join("");
+  updateStats();
+}
+function openDetail(vin){
+  currentVIN=vin; const v=findV(vin); if(!v) return;
+  document.getElementById("view-list").classList.remove("active");
+  document.getElementById("view-detail").classList.add("active");
+  window.scrollTo(0,0);
+  document.getElementById("d-title").textContent=`${v.year} ${v.make} ${v.model}`;
+  document.getElementById("d-sub").textContent=`VIN: ${v.vin} · Stock: ${v.stock||"—"} · ${v.mileage?Number(v.mileage).toLocaleString()+" mi":""}`;
+  renderDetail(v);
+}
+function renderDetail(v){
+  const iO=["Pending Inspection","Inspected","Parts Logged","Sold"];
+  const sO=["Pending Service","Serviced","Sold"];
+  const iB=iO.map((o,i)=>`<button class="tog-btn${(v.inspStatus||"Pending Inspection")===o?" a"+i:""}" onclick="setInsp('${o}')">${o}</button>`).join("");
+  const sB=sO.map((o,i)=>`<button class="tog-btn${(v.svcStatus||"Pending Service")===o?" b"+i:""}" onclick="setSvc('${o}')">${o}</button>`).join("");
+  const pH=(v.parts||[]).map((p,pi)=>`
+    <div class="part-row">
+      <input type="text" value="${esc(p.desc||"")}" placeholder="Description" onchange="updatePart(${pi},'desc',this.value)">
+      <input type="text" value="${esc(p.num||"")}" placeholder="Part #" onchange="updatePart(${pi},'num',this.value)">
+      <input type="number" value="${p.cost||""}" placeholder="0.00" step="0.01" onchange="updatePart(${pi},'cost',this.value)">
+      <button class="del-part" onclick="deletePart(${pi})">🗑</button>
+    </div>`).join("");
+  const pT=(v.parts||[]).reduce((s,p)=>s+(parseFloat(p.cost)||0),0);
+  document.getElementById("detail-body").innerHTML=`
+    <div class="info-grid">
+      <div class="info-cell"><div class="lbl">VIN</div><div class="val" style="font-size:11px;font-family:monospace">${esc(v.vin)}</div></div>
+      <div class="info-cell"><div class="lbl">Stock #</div><div class="val">${esc(v.stock||"—")}</div></div>
+      <div class="info-cell"><div class="lbl">Year / Make</div><div class="val">${v.year} ${esc(v.make)}</div></div>
+      <div class="info-cell"><div class="lbl">Model</div><div class="val">${esc(v.model)}</div></div>
+      <div class="info-cell"><div class="lbl">Mileage</div><div class="val">${v.mileage?Number(v.mileage).toLocaleString()+" mi":"—"}</div></div>
+      <div class="info-cell"><div class="lbl">Color</div><div class="val">${esc(v.color||"—")}</div></div>
+      <div class="info-cell"><div class="lbl">Date Added</div><div class="val">${esc(v.dateAdded||"—")}</div></div>
+      <div class="info-cell"><div class="lbl">Parts Total</div><div class="val">$${pT.toFixed(2)}</div></div>
+    </div>
+    <div class="section-card">
+      <div class="section-hdr stat-sec"><span class="s-icon">📋</span><span class="s-title">Status</span></div>
+      <div class="section-body">
+        <div class="toggle-lbl">Inspection</div><div class="toggle-group">${iB}</div>
+        <div class="toggle-lbl">Service</div><div class="toggle-group">${sB}</div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-hdr int"><span class="s-icon">🪑</span><span class="s-title">Interior</span></div>
+      <div class="section-body"><textarea class="insp" id="f-interior" placeholder="Describe interior issues…">${esc(v.interior||"")}</textarea></div>
+    </div>
+    <div class="section-card">
+      <div class="section-hdr ext"><span class="s-icon">🚗</span><span class="s-title">Exterior</span></div>
+      <div class="section-body"><textarea class="insp" id="f-exterior" placeholder="Describe exterior issues…">${esc(v.exterior||"")}</textarea></div>
+    </div>
+    <div class="section-card">
+      <div class="section-hdr mech"><span class="s-icon">🔧</span><span class="s-title">Mechanical</span></div>
+      <div class="section-body"><textarea class="insp" id="f-mechanical" placeholder="Describe mechanical issues…">${esc(v.mechanical||"")}</textarea></div>
+    </div>
+    <div class="section-card">
+      <div class="section-hdr parts"><span class="s-icon">📦</span><span class="s-title">Parts &amp; Costs</span></div>
+      <div class="section-body">
+        ${(v.parts||[]).length?`<div class="part-row-hdr"><span>Description</span><span>Part #</span><span>Cost</span><span></span></div>`:""}
+        <div class="parts-grid">${pH}</div>
+        <button class="add-part-btn" onclick="addPart()">+ Add part</button>
+        ${(v.parts||[]).length?`<div class="parts-total">Total: <strong>$${pT.toFixed(2)}</strong></div>`:""}
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-hdr notes-sec"><span class="s-icon">📝</span><span class="s-title">General Notes</span></div>
+      <div class="section-body"><textarea class="insp" id="f-notes" placeholder="Any additional notes…" style="min-height:56px">${esc(v.notes||"")}</textarea></div>
+    </div>
+    <div class="save-bar">
+      <button class="save-main" onclick="saveDetail()">Save</button>
+      <span class="saved-msg" id="saved-msg">✓ Saved</span>
+      <button class="del-vehicle" onclick="deleteVehicle()">Remove</button>
+    </div>`;
+}
+function setInsp(val){ const v=findV(currentVIN); if(!v) return; v.inspStatus=val; saveLocal(); renderDetail(v); }
+function setSvc(val){ const v=findV(currentVIN); if(!v) return; v.svcStatus=val; saveLocal(); renderDetail(v); }
+function updatePart(pi,f,val){ const v=findV(currentVIN); if(!v||!v.parts[pi]) return; v.parts[pi][f]=val; saveLocal(); }
+function addPart(){ const v=findV(currentVIN); if(!v) return; if(!v.parts)v.parts=[]; v.parts.push({desc:"",num:"",cost:""}); saveLocal(); renderDetail(v); }
+function deletePart(pi){ const v=findV(currentVIN); if(!v) return; v.parts.splice(pi,1); saveLocal(); renderDetail(v); }
+function saveDetail(){
+  const v=findV(currentVIN); if(!v) return;
+  v.interior  =document.getElementById("f-interior")?.value  ??v.interior;
+  v.exterior  =document.getElementById("f-exterior")?.value  ??v.exterior;
+  v.mechanical=document.getElementById("f-mechanical")?.value??v.mechanical;
+  v.notes     =document.getElementById("f-notes")?.value     ??v.notes;
+  saveLocal();
+  const m=document.getElementById("saved-msg");
+  if(m){ m.style.display="inline"; setTimeout(()=>m.style.display="none",2000); }
+}
+function deleteVehicle(){ if(!confirm("Remove this vehicle?")) return; vehicles=vehicles.filter(v=>v.vin!==currentVIN); saveLocal(); goBack(); }
+function goBack(){ currentVIN=null; document.getElementById("view-detail").classList.remove("active"); document.getElementById("view-list").classList.add("active"); renderList(); }
+function openAddModal(){ document.getElementById("add-modal").classList.add("open"); }
+function closeAddModal(){ document.getElementById("add-modal").classList.remove("open"); }
+function addManual(){
+  const make=document.getElementById("m-make").value.trim();
+  const model=document.getElementById("m-model").value.trim();
+  if(!make||!model){ alert("Make and model are required."); return; }
+  vehicles.push({
+    vin:document.getElementById("m-vin").value.trim()||"MANUAL-"+Date.now(),
+    year:parseInt(document.getElementById("m-year").value)||"", make, model,
+    mileage:parseInt(document.getElementById("m-mileage").value)||0,
+    stock:document.getElementById("m-stock").value.trim(),
+    color:document.getElementById("m-color").value.trim(),
+    dateAdded:new Date().toISOString().split("T")[0],
+    inspStatus:"Pending Inspection",svcStatus:"Pending Service",
+    interior:"",exterior:"",mechanical:"",parts:[],notes:""
+  });
+  saveLocal(); closeAddModal();
+  ["m-year","m-make","m-model","m-mileage","m-vin","m-stock","m-color"].forEach(id=>document.getElementById(id).value="");
+  renderList();
+}
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+loadLocal(); renderList(); updateStats(); syncFeed();
+</script>
+</body>
+</html>
+index.html
+Displaying index.html.
