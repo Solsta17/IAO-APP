@@ -325,14 +325,14 @@ const sorted=[...vehicles].sort((a,b)=>{
 const as=a.inspStatus==="Sold"?1:0, bs=b.inspStatus==="Sold"?1:0;
 if(as!==bs) return as-bs;
 switch(sv){
-case "date-asc": return (a.dateAdded||"").localeCompare(b.dateAdded||"");
+case "date-asc": return new Date(a.dateAdded||0) - new Date(b.dateAdded||0);M
 case "year-desc": return (b.year||0)-(a.year||0);
 case "year-asc": return (a.year||0)-(b.year||0);
 case "make-asc": return (a.make||"").localeCompare(b.make||"");
 case "make-desc": return (b.make||"").localeCompare(a.make||"");
 case "mileage-asc": return (a.mileage||0)-(b.mileage||0);
 case "mileage-desc": return (b.mileage||0)-(a.mileage||0);
-default: return (b.dateAdded||"").localeCompare(a.dateAdded||"");
+default: return new Date(b.dateAdded||0) - new Date(a.dateAdded||0);
 }
 });
 const filtered=sorted.filter(v=>{
