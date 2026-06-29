@@ -303,10 +303,12 @@ async function syncFeed(){
 }
 
 function getIB(v){
-  if(v.inspStatus==="Sold") return {cls:"badge-sold",label:"Sold"};
-  if((v.parts||[]).length>0) return {cls:"badge-parts",label:"Parts"};
-  if(v.interior||v.exterior||v.mechanical) return {cls:"badge-inspected",label:"Inspected"};
-  return {cls:"badge-pending",label:"Pending"};
+if(v.inspStatus==="Sold") return {cls:"badge-sold",label:"Sold"};
+if(v.inspStatus==="Inspected") return {cls:"badge-inspected",label:"Inspected"};
+if(v.inspStatus==="Parts Logged") return {cls:"badge-parts",label:"Parts"};
+if((v.parts||[]).length>0) return {cls:"badge-parts",label:"Parts"};
+if(v.interior||v.exterior||v.mechanical) return {cls:"badge-inspected",label:"Inspected"};
+return {cls:"badge-pending",label:"Pending"};
 }
 function getSB(v){
 if(v.svcStatus==="Sold") return {cls:"badge-sold",label:"Sold"};
