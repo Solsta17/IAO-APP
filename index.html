@@ -267,6 +267,31 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
 </div>
 </div>
 
+<script>
+function checkPin(){
+var input=document.getElementById("pin-input");
+var error=document.getElementById("pin-error");
+if(input.value==="2344"){
+document.getElementById("pin-overlay").style.display="none";
+sessionStorage.setItem("iao_auth","1");
+} else {
+error.style.display="block";
+input.value="";
+input.focus();
+setTimeout(function(){ error.style.display="none"; },2000);
+}
+}
+function checkAuth(){
+if(sessionStorage.getItem("iao_auth")!=="1"){
+document.getElementById("pin-overlay").style.display="flex";
+setTimeout(function(){ document.getElementById("pin-input").focus(); },100);
+} else {
+document.getElementById("pin-overlay").style.display="none";
+}
+}
+checkAuth();
+</script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDocs, deleteDoc, collection } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
@@ -671,29 +696,7 @@ function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
 window.esc = esc;
 
 
-function checkPin(){
-var input=document.getElementById("pin-input");
-var error=document.getElementById("pin-error");
-if(input.value==="2344"){
-document.getElementById("pin-overlay").style.display="none";
-sessionStorage.setItem("iao_auth","1");
-} else {
-error.style.display="block";
-input.value="";
-input.focus();
-setTimeout(function(){ error.style.display="none"; },2000);
-}
-}
-function checkAuth(){
-if(sessionStorage.getItem("iao_auth")!=="1"){
-document.getElementById("pin-overlay").style.display="flex";
-setTimeout(function(){ document.getElementById("pin-input").focus(); },100);
-} else {
-document.getElementById("pin-overlay").style.display="none";
-}
-}
 
-checkAuth();
 init();
 </script>
 </body>
