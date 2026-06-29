@@ -435,7 +435,11 @@ document.getElementById("detail-body").innerHTML=
 
 function setInsp(val){
 const v=findV(currentVIN); if(!v) return;
+saveDetail();
 v.inspStatus=val; saveLocal(); updateStats(); renderList();
+document.querySelectorAll(".toggle-group")[0].querySelectorAll(".tog-btn").forEach(function(btn,i){
+btn.className="tog-btn"+(btn.textContent===val?" ai"+i:"");
+});
 }
 function setSvc(val){
 const v=findV(currentVIN); if(!v) return;
