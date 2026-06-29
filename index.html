@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- v4-firebase -->
+<!DOCTYPE html><!-- v5-firebase-notes -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -79,7 +79,22 @@ body { font-family: system-ui,-apple-system,sans-serif; background:var(--bg); co
 .s-icon { font-size:15px; }
 .s-title { font-size:13px; font-weight:600; color:var(--navy); flex:1; }
 .section-body { padding:12px 14px; }
-textarea.insp { width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-size:13px; font-family:inherit; color:var(--steel); resize:vertical; min-height:80px; line-height:1.5; outline:none; background:var(--bg); }
+
+/* Note entry styles */
+.note-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+.note-item { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; position:relative; }
+.note-ts { font-size:10px; color:var(--muted); margin-bottom:4px; font-weight:600; }
+.note-text { font-size:13px; color:var(--steel); line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+.note-del { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:2px 5px; border-radius:4px; }
+.note-del:hover { color:var(--red); background:var(--red-bg); }
+.note-input-row { display:flex; gap:8px; align-items:flex-end; }
+.note-input-row textarea { flex:1; border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-size:13px; font-family:inherit; color:var(--steel); resize:vertical; min-height:60px; line-height:1.5; outline:none; background:var(--bg); }
+.note-input-row textarea:focus { border-color:var(--blue); background:var(--white); }
+.note-add-btn { background:var(--navy-mid); color:#fff; border:none; border-radius:8px; padding:9px 14px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; height:fit-content; }
+.note-add-btn:hover { background:var(--navy); }
+.note-empty { font-size:12px; color:var(--muted); font-style:italic; margin-bottom:8px; }
+
+textarea.insp { width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-size:13px; font-family:inherit; color:var(--steel); resize:vertical; min-height:60px; line-height:1.5; outline:none; background:var(--bg); }
 textarea.insp:focus { border-color:var(--blue); background:var(--white); }
 .toggle-lbl { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
 .toggle-group { display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:10px; }
@@ -230,7 +245,7 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDocs, deleteDoc, collection } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
 apiKey: "AIzaSyD7oCXNoF3fq3IlaMa9B9TII5QEKLQGyHw",
@@ -243,43 +258,35 @@ appId: "1:753491195955:web:68584c1dccea320da78b46"
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
 const PROXY_URL = "/api/proxy";
 let vehicles = [], currentVIN = null, lastSync = null;
-let dbReady = false;
 
-// ── Firebase helpers ───────────────────────────────────────────────────────
+// ── Firebase ───────────────────────────────────────────────────────────────
 async function saveVehicleToDb(v) {
-try {
-await setDoc(doc(db, "vehicles", v.vin), v);
-} catch(e) { console.error("DB save error:", e); }
+try { await setDoc(doc(db, "vehicles", v.vin), v); } catch(e) { console.error("Save error:", e); }
 }
-
 async function deleteVehicleFromDb(vin) {
 try { await deleteDoc(doc(db, "vehicles", vin)); } catch(e) {}
 }
-
 async function loadFromDb() {
 try {
-const snap = await getDocs(collection(db, "vehicles"));
-const data = [];
+var snap = await getDocs(collection(db, "vehicles"));
+var data = [];
 snap.forEach(function(d){ data.push(d.data()); });
 return data;
-} catch(e) { console.error("DB load error:", e); return []; }
+} catch(e) { console.error("Load error:", e); return []; }
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
 document.getElementById("fb-status").textContent = "⟳ Loading from database…";
-const dbVehicles = await loadFromDb();
+var dbVehicles = await loadFromDb();
 if (dbVehicles.length > 0) {
 vehicles = dbVehicles;
 document.getElementById("fb-status").textContent = "✓ Database connected";
-dbReady = true;
 updateStats(); renderList();
 } else {
-document.getElementById("fb-status").textContent = "✓ Database connected — syncing feed…";
-dbReady = true;
+document.getElementById("fb-status").textContent = "✓ Database ready — syncing feed…";
 }
 syncFeed();
 }
@@ -298,7 +305,7 @@ document.getElementById("s-cost").textContent = "$"+Math.round(tot).toLocaleStri
 document.getElementById("header-sub").textContent = vehicles.length+" vehicles · Last sync: "+(lastSync||"never");
 }
 
-// ── Sync feed ──────────────────────────────────────────────────────────────
+// ── Sync ───────────────────────────────────────────────────────────────────
 window.syncFeed = async function() {
 var btn=document.getElementById("sync-btn"), icon=document.getElementById("sync-icon");
 var st=document.getElementById("sync-status");
@@ -306,33 +313,33 @@ btn.disabled=true; icon.innerHTML='<span class="spin">⟳</span>';
 st.className="sync-status info"; st.style.display="block";
 st.textContent="Fetching live inventory from AutoManager…";
 try {
-var res = await fetch(PROXY_URL);
-var data = await res.json();
+var res=await fetch(PROXY_URL);
+var data=await res.json();
 if(data.error) throw new Error(data.error);
-var feed = data.vehicles;
+var feed=data.vehicles;
 if(!feed||!feed.length) throw new Error("No vehicles returned from feed.");
-var feedVINs = new Set(feed.map(function(v){ return v.vin; }));
-var existVINs = new Set(vehicles.map(function(v){ return v.vin; }));
-var added=0, marked=0;
-var savePromises = [];
+var feedVINs=new Set(feed.map(function(v){ return v.vin; }));
+var existVINs=new Set(vehicles.map(function(v){ return v.vin; }));
+var added=0, marked=0, promises=[];
 vehicles.forEach(function(v){
 if(v.vin&&!feedVINs.has(v.vin)&&v.inspStatus!=="Sold"){
 v.inspStatus="Sold"; v.svcStatus="Sold"; marked++;
-savePromises.push(saveVehicleToDb(v));
+promises.push(saveVehicleToDb(v));
 }
 });
 feed.forEach(function(fv){
 if(!fv.vin) return;
 if(!existVINs.has(fv.vin)){
-var newV = {
+var newV={
 vin:fv.vin, year:fv.year||"", make:fv.make||"", model:fv.model||"",
 mileage:fv.mileage||0, stock:fv.stock||"", color:fv.color||"",
 dateAdded:fv.createdDate||new Date().toISOString().split("T")[0],
 inspStatus:"Pending Inspection", svcStatus:"Pending Service",
-interior:"", exterior:"", mechanical:"", parts:[], notes:""
+interiorNotes:[], exteriorNotes:[], mechanicalNotes:[],
+generalNotes:[], parts:[], notes:""
 };
 vehicles.push(newV);
-savePromises.push(saveVehicleToDb(newV));
+promises.push(saveVehicleToDb(newV));
 added++;
 } else {
 var ex=findV(fv.vin);
@@ -340,11 +347,15 @@ if(ex){
 ex.year=fv.year||ex.year; ex.make=fv.make||ex.make;
 ex.model=fv.model||ex.model; ex.mileage=fv.mileage||ex.mileage;
 ex.stock=fv.stock||ex.stock; ex.color=fv.color||ex.color;
+if(!ex.interiorNotes) ex.interiorNotes=[];
+if(!ex.exteriorNotes) ex.exteriorNotes=[];
+if(!ex.mechanicalNotes) ex.mechanicalNotes=[];
+if(!ex.generalNotes) ex.generalNotes=[];
 if(ex.inspStatus==="Sold"){ ex.inspStatus="Pending Inspection"; ex.svcStatus="Pending Service"; }
 }
 }
 });
-await Promise.all(savePromises);
+await Promise.all(promises);
 lastSync=new Date().toLocaleTimeString();
 st.className="sync-status success";
 st.textContent="✓ "+feed.length+" vehicles synced · "+added+" new · "+marked+" marked sold";
@@ -363,7 +374,8 @@ if(v.inspStatus==="Sold") return {cls:"badge-sold", label:"Sold"};
 if(v.inspStatus==="Inspected") return {cls:"badge-inspected",label:"Inspected"};
 if(v.inspStatus==="Parts Logged") return {cls:"badge-parts", label:"Parts"};
 if((v.parts||[]).length>0) return {cls:"badge-parts", label:"Parts"};
-if(v.interior||v.exterior||v.mechanical) return {cls:"badge-inspected",label:"Inspected"};
+var hasNotes=(v.interiorNotes&&v.interiorNotes.length)||(v.exteriorNotes&&v.exteriorNotes.length)||(v.mechanicalNotes&&v.mechanicalNotes.length);
+if(hasNotes) return {cls:"badge-inspected",label:"Inspected"};
 return {cls:"badge-pending",label:"Pending"};
 }
 function getSB(v){
@@ -416,14 +428,55 @@ return '<div class="v-card" onclick="openDetail(\''+esc(v.vin)+'\')">'
 +'<div class="v-name">'+v.year+' '+esc(v.make)+' '+esc(v.model)+'</div>'
 +'<div class="v-meta">'+[mil,v.stock?"#"+v.stock:"",v.color].filter(Boolean).join(" · ")+'</div>'
 +'</div>'
-+'<div class="v-badges">'
-+'<span class="badge '+ib.cls+'">'+ib.label+'</span>'
-+'<span class="badge '+sb.cls+'">'+sb.label+'</span>'
-+'</div>'
++'<div class="v-badges"><span class="badge '+ib.cls+'">'+ib.label+'</span><span class="badge '+sb.cls+'">'+sb.label+'</span></div>'
 +'<span class="v-arrow">›</span>'
 +'</div></div>';
 }).join("");
 updateStats();
+};
+
+// ── Notes helpers ──────────────────────────────────────────────────────────
+function fmtTs(ts){
+var d=new Date(ts);
+return (d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullYear()).slice(2)+" "+
+d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+}
+
+function renderNotes(notes, field){
+var items=(notes||[]).map(function(n,i){
+return '<div class="note-item">'
++'<div class="note-ts">'+fmtTs(n.ts)+'</div>'
++'<div class="note-text">'+esc(n.text)+'</div>'
++'<button class="note-del" onclick="deleteNote(\''+field+'\','+i+')">✕</button>'
++'</div>';
+}).join("");
+return (notes&&notes.length?'<div class="note-list">'+items+'</div>':'<div class="note-empty">No notes yet</div>')
++'<div class="note-input-row">'
++'<textarea class="insp" id="note-input-'+field+'" placeholder="Add a note…" spellcheck="true"></textarea>'
++'<button class="note-add-btn" onclick="addNote(\''+field+'\')">Add</button>'
++'</div>';
+}
+
+window.addNote = async function(field){
+var v=findV(currentVIN); if(!v) return;
+var el=document.getElementById("note-input-"+field);
+if(!el||!el.value.trim()) return;
+var key=field+"Notes";
+if(!v[key]) v[key]=[];
+v[key].push({ts:Date.now(), text:el.value.trim()});
+el.value="";
+await saveVehicleToDb(v);
+renderDetail(v);
+updateStats(); renderList();
+};
+
+window.deleteNote = async function(field, idx){
+var v=findV(currentVIN); if(!v) return;
+var key=field+"Notes";
+if(!v[key]) return;
+v[key].splice(idx,1);
+await saveVehicleToDb(v);
+renderDetail(v);
 };
 
 // ── Detail ─────────────────────────────────────────────────────────────────
@@ -438,6 +491,11 @@ renderDetail(v);
 };
 
 function renderDetail(v){
+if(!v.interiorNotes) v.interiorNotes=[];
+if(!v.exteriorNotes) v.exteriorNotes=[];
+if(!v.mechanicalNotes)v.mechanicalNotes=[];
+if(!v.generalNotes) v.generalNotes=[];
+
 var iO=["Pending Inspection","Inspected","Parts Logged","Sold"];
 var sO=["Pending Service","In-Service","Serviced","Sold"];
 var cur_i=v.inspStatus||"Pending Inspection";
@@ -453,6 +511,7 @@ return '<div class="part-row">'
 +'</div>';
 }).join("");
 var pT=(v.parts||[]).reduce(function(s,p){ return s+(parseFloat(p.cost)||0); },0);
+
 document.getElementById("detail-body").innerHTML=
 '<div class="info-grid">'
 +'<div class="info-cell"><div class="lbl">VIN</div><div class="val" style="font-size:11px;font-family:monospace">'+esc(v.vin)+'</div></div>'
@@ -470,11 +529,11 @@ document.getElementById("detail-body").innerHTML=
 +'<div class="toggle-lbl">Service</div><div class="toggle-group" id="svc-grp">'+sB+'</div>'
 +'</div></div>'
 +'<div class="section-card"><div class="section-hdr int"><span class="s-icon">🪑</span><span class="s-title">Interior</span></div>'
-+'<div class="section-body"><textarea class="insp" id="f-interior" placeholder="Describe interior issues…">'+esc(v.interior||"")+'</textarea></div></div>'
++'<div class="section-body">'+renderNotes(v.interiorNotes,"interior")+'</div></div>'
 +'<div class="section-card"><div class="section-hdr ext"><span class="s-icon">🚗</span><span class="s-title">Exterior</span></div>'
-+'<div class="section-body"><textarea class="insp" id="f-exterior" placeholder="Describe exterior issues…">'+esc(v.exterior||"")+'</textarea></div></div>'
++'<div class="section-body">'+renderNotes(v.exteriorNotes,"exterior")+'</div></div>'
 +'<div class="section-card"><div class="section-hdr mech"><span class="s-icon">🔧</span><span class="s-title">Mechanical</span></div>'
-+'<div class="section-body"><textarea class="insp" id="f-mechanical" placeholder="Describe mechanical issues…">'+esc(v.mechanical||"")+'</textarea></div></div>'
++'<div class="section-body">'+renderNotes(v.mechanicalNotes,"mechanical")+'</div></div>'
 +'<div class="section-card"><div class="section-hdr parts"><span class="s-icon">📦</span><span class="s-title">Parts &amp; Costs</span></div>'
 +'<div class="section-body">'
 +((v.parts||[]).length?'<div class="part-row-hdr"><span>Description</span><span>Part #</span><span>Cost</span><span></span></div>':"")
@@ -483,51 +542,28 @@ document.getElementById("detail-body").innerHTML=
 +((v.parts||[]).length?'<div class="parts-total">Total: <strong id="parts-total-val">$'+pT.toFixed(2)+'</strong></div>':"")
 +'</div></div>'
 +'<div class="section-card"><div class="section-hdr notes-sec"><span class="s-icon">📝</span><span class="s-title">General Notes</span></div>'
-+'<div class="section-body"><textarea class="insp" id="f-notes" placeholder="Any additional notes…" style="min-height:56px">'+esc(v.notes||"")+'</textarea></div></div>'
++'<div class="section-body">'+renderNotes(v.generalNotes,"general")+'</div></div>'
 +'<div class="save-bar">'
-+'<button class="save-main" onclick="saveDetail()">Save</button>'
 +'<span class="saved-msg" id="saved-msg">✓ Saved</span>'
-+'<button class="del-vehicle" onclick="deleteVehicle()">Remove</button>'
++'<button class="del-vehicle" onclick="deleteVehicle()">Remove Vehicle</button>'
 +'</div>';
 }
 
-function collectFields(v){
-var fi=document.getElementById("f-interior");
-var fe=document.getElementById("f-exterior");
-var fm=document.getElementById("f-mechanical");
-var fn=document.getElementById("f-notes");
-if(fi) v.interior=fi.value;
-if(fe) v.exterior=fe.value;
-if(fm) v.mechanical=fm.value;
-if(fn) v.notes=fn.value;
-}
-
-window.saveDetail = async function(){
-var v=findV(currentVIN); if(!v) return;
-collectFields(v);
-await saveVehicleToDb(v);
-var m=document.getElementById("saved-msg");
-if(m){ m.style.display="inline"; setTimeout(function(){ m.style.display="none"; },2000); }
-updateStats(); renderList();
-};
-
 window.setInsp = async function(val){
 var v=findV(currentVIN); if(!v) return;
-collectFields(v);
 v.inspStatus=val;
 await saveVehicleToDb(v);
 var grp=document.getElementById("insp-grp");
-if(grp){ var btns=grp.querySelectorAll(".tog-btn"); btns.forEach(function(btn,i){ btn.className="tog-btn"+(btn.textContent===val?" ai"+i:""); }); }
+if(grp){ grp.querySelectorAll(".tog-btn").forEach(function(btn,i){ btn.className="tog-btn"+(btn.textContent===val?" ai"+i:""); }); }
 updateStats(); renderList();
 };
 
 window.setSvc = async function(val){
 var v=findV(currentVIN); if(!v) return;
-collectFields(v);
 v.svcStatus=val;
 await saveVehicleToDb(v);
 var grp=document.getElementById("svc-grp");
-if(grp){ var btns=grp.querySelectorAll(".tog-btn"); btns.forEach(function(btn,i){ btn.className="tog-btn"+(btn.textContent===val?" as"+i:""); }); }
+if(grp){ grp.querySelectorAll(".tog-btn").forEach(function(btn,i){ btn.className="tog-btn"+(btn.textContent===val?" as"+i:""); }); }
 updateStats(); renderList();
 };
 
@@ -546,7 +582,6 @@ saveVehicleToDb(v);
 window.addPart = function(){
 var v=findV(currentVIN); if(!v) return;
 if(!v.parts) v.parts=[];
-collectFields(v);
 v.parts.push({desc:"",num:"",cost:""});
 saveVehicleToDb(v);
 renderDetail(v);
@@ -554,7 +589,6 @@ renderDetail(v);
 
 window.deletePart = function(pi){
 var v=findV(currentVIN); if(!v) return;
-collectFields(v);
 v.parts.splice(pi,1);
 saveVehicleToDb(v);
 renderDetail(v);
@@ -568,8 +602,6 @@ goBack();
 };
 
 window.goBack = function(){
-var v=findV(currentVIN);
-if(v){ collectFields(v); saveVehicleToDb(v); }
 currentVIN=null;
 document.getElementById("view-detail").classList.remove("active");
 document.getElementById("view-list").classList.add("active");
@@ -578,8 +610,7 @@ renderList();
 
 window.markAllDone = async function(){
 if(!confirm("Mark all current vehicles as Inspected and Serviced?\n\nNew vehicles added in future syncs will still start as Pending.")) return;
-var count=0;
-var promises=[];
+var count=0, promises=[];
 vehicles.forEach(function(v){
 if(v.inspStatus!=="Sold"){ v.inspStatus="Inspected"; v.svcStatus="Serviced"; count++; promises.push(saveVehicleToDb(v)); }
 });
@@ -603,7 +634,7 @@ stock:document.getElementById("m-stock").value.trim(),
 color:document.getElementById("m-color").value.trim(),
 dateAdded:new Date().toISOString().split("T")[0],
 inspStatus:"Pending Inspection", svcStatus:"Pending Service",
-interior:"", exterior:"", mechanical:"", parts:[], notes:""
+interiorNotes:[], exteriorNotes:[], mechanicalNotes:[], generalNotes:[], parts:[], notes:""
 };
 vehicles.push(newV);
 await saveVehicleToDb(newV);
