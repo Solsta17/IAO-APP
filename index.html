@@ -422,6 +422,7 @@ function getIB(v){
 if(v.inspStatus==="Sold") return {cls:"badge-sold", label:"Sold"};
 if(v.inspStatus==="Inspected") return {cls:"badge-inspected",label:"Inspected"};
 if(v.inspStatus==="Parts Logged") return {cls:"badge-parts", label:"Parts"};
+if(v.inspStatus==="Pending Inspection") return {cls:"badge-pending",label:"Pending"};
 if((v.parts||[]).length>0) return {cls:"badge-parts", label:"Parts"};
 var hasNotes=(v.interiorNotes&&v.interiorNotes.length)||(v.exteriorNotes&&v.exteriorNotes.length)||(v.mechanicalNotes&&v.mechanicalNotes.length);
 if(hasNotes) return {cls:"badge-inspected",label:"Inspected"};
