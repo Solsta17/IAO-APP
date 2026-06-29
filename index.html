@@ -441,8 +441,17 @@ function setSvc(val){
 const v=findV(currentVIN); if(!v) return;
 v.svcStatus=val; saveLocal(); updateStats(); renderList();
 }
-function updatePart(pi,f,val){ const v=findV(currentVIN); if(!v||!v.parts[pi]) return; v.parts[pi][f]=val; saveLocal(); }
-function addPart(){ const v=findV(currentVIN); if(!v) return; if(!v.parts)v.parts=[]; v.parts.push({desc:"",num:"",cost:""}); saveLocal(); renderDetail(v); }
+function updatePart(pi,f,val){
+const v=findV(currentVIN); if(!v||!v.parts[pi]) return;
+v.parts[pi][f]=val;
+saveLocal();
+const pT=(v.parts||[]).reduce(function(s,p){ return s+(parseFloat(p.cost)||0); },0);
+const totEl=document.querySelector(".parts-total strong");
+if(totEl) totEl.textContent="$"+pT.toFixed(2);
+const infoEl=document.querySelectorAll(".info-cell .val");
+if(infoEl[7]) infoEl[7].textContent="$"+pT.toFixed(2);
+updateStats();
+}function addPart(){ const v=findV(currentVIN); if(!v) return; if(!v.parts)v.parts=[]; v.parts.push({desc:"",num:"",cost:""}); saveLocal(); renderDetail(v); }
 function deletePart(pi){ const v=findV(currentVIN); if(!v) return; v.parts.splice(pi,1); saveLocal(); renderDetail(v); }
 function saveDetail(){
 const v=findV(currentVIN); if(!v) return;
