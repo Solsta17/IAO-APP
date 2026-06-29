@@ -435,11 +435,11 @@ document.getElementById("detail-body").innerHTML=
 
 function setInsp(val){
 const v=findV(currentVIN); if(!v) return;
-v.inspStatus=val; saveLocal(); renderDetail(v); updateStats(); renderList();
+v.inspStatus=val; saveLocal(); updateStats(); renderList();
 }
 function setSvc(val){
 const v=findV(currentVIN); if(!v) return;
-v.svcStatus=val; saveLocal(); renderDetail(v); updateStats(); renderList();
+v.svcStatus=val; saveLocal(); updateStats(); renderList();
 }
 function updatePart(pi,f,val){ const v=findV(currentVIN); if(!v||!v.parts[pi]) return; v.parts[pi][f]=val; saveLocal(); }
 function addPart(){ const v=findV(currentVIN); if(!v) return; if(!v.parts)v.parts=[]; v.parts.push({desc:"",num:"",cost:""}); saveLocal(); renderDetail(v); }
