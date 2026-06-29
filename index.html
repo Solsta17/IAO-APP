@@ -456,7 +456,12 @@ function saveDetail(){
   if(m){ m.style.display="inline"; setTimeout(()=>m.style.display="none",2000); }
 }
 function deleteVehicle(){ if(!confirm("Remove this vehicle?")) return; vehicles=vehicles.filter(v=>v.vin!==currentVIN); saveLocal(); goBack(); }
-function goBack(){ currentVIN=null; document.getElementById("view-detail").classList.remove("active"); document.getElementById("view-list").classList.add("active"); renderList(); }
+function goBack(){
+saveDetail();
+currentVIN=null;
+document.getElementById("view-detail").classList.remove("active");
+document.getElementById("view-list").classList.add("active");
+renderList();}
 function openAddModal(){ document.getElementById("add-modal").classList.add("open"); }
 function closeAddModal(){ document.getElementById("add-modal").classList.remove("open"); }
 function addManual(){
@@ -483,6 +488,11 @@ vehicles.forEach(v=>{
 if(v.inspStatus!=="Sold") v.inspStatus="Inspected";
 if(v.svcStatus!=="Sold") v.svcStatus="Serviced";
 });
+saveLocal();
+updateStats();
+renderList();
+alert("Done! All " + vehicles.length + " vehicles marked as Inspected and Serviced.");
+}
 saveLocal(); renderList();
 }
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
