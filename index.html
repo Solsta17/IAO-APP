@@ -136,13 +136,15 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
       <h1>🚗 IAO Inspection Manager</h1>
       <div class="sub" id="header-sub">Loading inventory…</div>
     </div>
+    <button class="sync-btn" style="background:#D97706;margin-right:6px" onclick="markAllDone()">✓ Mark All Done</button>
     <button class="sync-btn" id="sync-btn" onclick="syncFeed()">
       <span id="sync-icon">⟳</span> Sync Feed
     </button>
   </div>
   <div class="stats-bar">
     <div class="stat-item"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Total</div></div>
-    <div class="stat-item"><div class="stat-num" id="s-pending">0</div><div class="stat-lbl">Pending</div></div>
+   <div class="stat-item"><div class="stat-num" id="s-psvc">0</div><div class="stat-lbl">Pend.Svc</div></div>
+<div class="stat-item"><div class="stat-num" id="s-insvc">0</div><div class="stat-lbl">In-Service</div></div>
     <div class="stat-item"><div class="stat-num" id="s-insp">0</div><div class="stat-lbl">Inspected</div></div>
     <div class="stat-item"><div class="stat-num" id="s-psvc">0</div><div class="stat-lbl">Pend.Svc</div></div>
     <div class="stat-item"><div class="stat-num" id="s-svc">0</div><div class="stat-lbl">Serviced</div></div>
@@ -164,7 +166,8 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
     <select class="filter-sel" id="filter-svc" onchange="renderList()">
       <option value="">All service</option>
       <option value="Pending Service">Pending Svc</option>
-      <option value="Serviced">Serviced</option>
+<option value="In-Service">In-Service</option>
+<option value="Serviced">Serviced</option>
     </select>
     <select class="filter-sel" id="sort-sel" onchange="renderList()">
 <option value="date-desc">Newest added</option>
@@ -236,6 +239,7 @@ function updateStats(){
   document.getElementById("s-insp").textContent     = vehicles.filter(v=>v.inspStatus==="Inspected").length;
   document.getElementById("s-psvc").textContent     = vehicles.filter(v=>v.svcStatus==="Pending Service").length;
   document.getElementById("s-svc").textContent      = vehicles.filter(v=>v.svcStatus==="Serviced").length;
+  document.getElementById("s-insvc").textContent = vehicles.filter(v=>v.svcStatus==="In-Service").length;
   const tot=vehicles.reduce((s,v)=>s+(v.parts||[]).reduce((ps,p)=>ps+(parseFloat(p.cost)||0),0),0);
   document.getElementById("s-cost").textContent     = "$"+Math.round(tot).toLocaleString();
   document.getElementById("header-sub").textContent = vehicles.length+" vehicles · Last sync: "+(lastSync||"never");
@@ -305,9 +309,10 @@ function getIB(v){
   return {cls:"badge-pending",label:"Pending"};
 }
 function getSB(v){
-  if(v.svcStatus==="Sold") return {cls:"badge-sold",label:"Sold"};
-  if(v.svcStatus==="Serviced") return {cls:"badge-serviced",label:"Serviced"};
-  return {cls:"badge-pend-svc",label:"Pend.Svc"};
+if(v.svcStatus==="Sold") return {cls:"badge-sold",label:"Sold"};
+if(v.svcStatus==="Serviced") return {cls:"badge-serviced",label:"Serviced"};
+if(v.svcStatus==="In-Service") return {cls:"badge-parts",label:"In-Service"};
+return {cls:"badge-pend-svc",label:"Pend.Svc"};
 }
 function renderList(){
   const q=(document.getElementById("search-input").value||"").toLowerCase();
@@ -375,7 +380,7 @@ function openDetail(vin){
 }
 function renderDetail(v){
   const iO=["Pending Inspection","Inspected","Parts Logged","Sold"];
-  const sO=["Pending Service","Serviced","Sold"];
+  const sO=["Pending Service","In-Service","Serviced","Sold"];
   const iB=iO.map((o,i)=>`<button class="tog-btn${(v.inspStatus||"Pending Inspection")===o?" a"+i:""}" onclick="setInsp('${o}')">${o}</button>`).join("");
   const sB=sO.map((o,i)=>`<button class="tog-btn${(v.svcStatus||"Pending Service")===o?" b"+i:""}" onclick="setSvc('${o}')">${o}</button>`).join("");
   const pH=(v.parts||[]).map((p,pi)=>`
@@ -471,6 +476,14 @@ function addManual(){
   saveLocal(); closeAddModal();
   ["m-year","m-make","m-model","m-mileage","m-vin","m-stock","m-color"].forEach(id=>document.getElementById(id).value="");
   renderList();
+}
+  function markAllDone(){
+if(!confirm("Mark all current vehicles as Inspected and Serviced? New vehicles added in future syncs will still start as Pending.")) return;
+vehicles.forEach(v=>{
+if(v.inspStatus!=="Sold") v.inspStatus="Inspected";
+if(v.svcStatus!=="Sold") v.svcStatus="Serviced";
+});
+saveLocal(); renderList();
 }
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 loadLocal(); renderList(); updateStats(); syncFeed();
