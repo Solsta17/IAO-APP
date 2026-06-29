@@ -11,7 +11,8 @@ if (!response.ok) throw new Error("Feed returned status " + response.status);
 const xml = await response.text();
 const vehicles = [];
 const today = new Date().toISOString().split("T")[0];
-const blocks = xml.match(/<Vehicle[\s\S]*?<\/Vehicle>/gi) || xml.match(/<vehicle[\s\S]*?<\/vehicle>/gi) || [];
+const blocks = xml.match(/<Vehicle[\s\S]*?<\/Vehicle>/gi) || [];
+
 function g(b, ...tags) {
 for (const t of tags) {
 const m = b.match(new RegExp("<" + t + "[^>]*>(?:<!\\[CDATA\\[)?([^\\]<]*)(?:\\]\\]>)?<\\/" + t + ">", "i"));
@@ -19,18 +20,22 @@ if (m && m[1].trim()) return m[1].trim();
 }
 return "";
 }
+
 blocks.forEach(b => {
-const vin = g(b, "VIN", "Vin", "vin");
+const vin = g(b, "VIN");
 if (!vin) return;
 vehicles.push({
-vin, year: parseInt(g(b, "Year", "year")) || 0,
-make: g(b, "Make", "make"), model: g(b, "Model", "model"),
-mileage: parseInt(g(b, "Mileage", "Miles").replace(/\D/g, "")) || 0,
-stock: g(b, "StockNum", "StockNumber", "Stock"),
-color: g(b, "ExtColor", "ExteriorColor", "Color"),
-createdDate: g(b, "CreatedDate", "InventoryDate") || today
+vin,
+year: parseInt(g(b, "Year")) || 0,
+make: g(b, "Make"),
+model: g(b, "Model"),
+mileage: parseInt(g(b, "Mileage").replace(/\D/g, "")) || 0,
+stock: g(b, "StockNum"),
+color: g(b, "ExtColor"),
+createdDate: g(b, "CreatedDate") || today
 });
 });
+
 if (!vehicles.length) {
 res.status(200).json({ error: "No vehicles parsed", sample: xml.substring(0, 300) });
 return;
