@@ -316,7 +316,7 @@ if(v.svcStatus==="Serviced") return {cls:"badge-serviced",label:"Serviced"};
 if(v.svcStatus==="In-Service") return {cls:"badge-parts",label:"In-Service"};
 return {cls:"badge-pend-svc",label:"Pend.Svc"};
 }
-function renderList(){
+  function renderList(){
   const q=(document.getElementById("search-input").value||"").toLowerCase();
   const fi=document.getElementById("filter-insp").value;
   const fs=document.getElementById("filter-svc").value;
