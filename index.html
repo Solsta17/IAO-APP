@@ -166,6 +166,17 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
       <option value="Pending Service">Pending Svc</option>
       <option value="Serviced">Serviced</option>
     </select>
+    <select class="filter-sel" id="sort-sel" onchange="renderList()">
+<option value="date-desc">Newest added</option>
+<option value="date-asc">Oldest added</option>
+<option value="year-desc">Year: newest first</option>
+<option value="year-asc">Year: oldest first</option>
+<option value="make-asc">Make: A → Z</option>
+<option value="make-desc">Make: Z → A</option>
+<option value="mileage-asc">Mileage: low → high</option>
+<option value="mileage-desc">Mileage: high → low</option>
+<option value="status-asc">Status: pending first</option>
+</select>
     <button class="add-btn" onclick="openAddModal()">+ Add</button>
   </div>
   <div class="vehicle-list" id="vehicle-list"></div>
