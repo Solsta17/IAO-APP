@@ -26,8 +26,8 @@ vehicles.push({
 vin, year: parseInt(g(b, "Year", "year")) || 0,
 make: g(b, "Make", "make"), model: g(b, "Model", "model"),
 mileage: parseInt(g(b, "Mileage", "Miles").replace(/\D/g, "")) || 0,
-stock: g(b, "StockNumber", "StockNum", "Stock"),
-color: g(b, "ExteriorColor", "Color"),
+stock: g(b, "StockNum", "StockNumber", "Stock"),
+color: g(b, "ExtColor", "ExteriorColor", "Color"),
 createdDate: g(b, "CreatedDate", "InventoryDate") || today
 });
 });
