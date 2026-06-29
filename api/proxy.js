@@ -14,7 +14,7 @@ const today = new Date().toISOString().split("T")[0];
 const blocks = xml.match(/<Vehicle[\s\S]*?<\/Vehicle>/gi) || xml.match(/<vehicle[\s\S]*?<\/vehicle>/gi) || [];
 function g(b, ...tags) {
 for (const t of tags) {
-const m = b.match(new RegExp("<" + t + "[^>]*>([^<]*)<\/" + t + ">", "i"));
+const m = b.match(new RegExp("<" + t + "[^>]*>(?:<!\\[CDATA\\[)?([^\\]<]*)(?:\\]\\]>)?<\\/" + t + ">", "i"));
 if (m && m[1].trim()) return m[1].trim();
 }
 return "";
