@@ -443,7 +443,11 @@ btn.className="tog-btn"+(btn.textContent===val?" ai"+i:"");
 }
 function setSvc(val){
 const v=findV(currentVIN); if(!v) return;
+saveDetail();
 v.svcStatus=val; saveLocal(); updateStats(); renderList();
+document.querySelectorAll(".toggle-group")[1].querySelectorAll(".tog-btn").forEach(function(btn,i){
+btn.className="tog-btn"+(btn.textContent===val?" as"+i:"");
+});
 }
 function updatePart(pi,f,val){
 const v=findV(currentVIN); if(!v||!v.parts[pi]) return;
