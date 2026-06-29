@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- v3 -->
+<!DOCTYPE html><!-- v4-firebase -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -129,6 +129,7 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
 .modal-foot { padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
 .modal-foot button { font-size:13px; padding:8px 16px; border-radius:8px; cursor:pointer; border:1px solid var(--border); background:var(--bg); }
 .modal-foot .btn-primary { background:var(--navy-mid); color:#fff; border-color:var(--navy-mid); }
+.fb-status { font-size:10px; color:#94A3B8; margin-top:2px; }
 </style>
 </head>
 <body>
@@ -138,6 +139,7 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
 <div>
 <h1>🚗 IAO Inspection Manager</h1>
 <div class="sub" id="header-sub">Loading inventory…</div>
+<div class="fb-status" id="fb-status">⟳ Connecting to database…</div>
 </div>
 <div class="header-btns">
 <button class="mark-btn" onclick="markAllDone()">✓ Mark All Done</button>
@@ -226,60 +228,114 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
 </div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyD7oCXNoF3fq3IlaMa9B9TII5QEKLQGyHw",
+authDomain: "iao-inspection.firebaseapp.com",
+projectId: "iao-inspection",
+storageBucket: "iao-inspection.firebasestorage.app",
+messagingSenderId: "753491195955",
+appId: "1:753491195955:web:68584c1dccea320da78b46"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 const PROXY_URL = "/api/proxy";
-const STORAGE_KEY = "iao_v5";
 let vehicles = [], currentVIN = null, lastSync = null;
+let dbReady = false;
 
-function loadLocal(){ try{ vehicles=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); }catch(e){ vehicles=[]; } }
-function saveLocal(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(vehicles)); }catch(e){} }
-function findV(vin){ return vehicles.find(v=>v.vin===vin); }
+// ── Firebase helpers ───────────────────────────────────────────────────────
+async function saveVehicleToDb(v) {
+try {
+await setDoc(doc(db, "vehicles", v.vin), v);
+} catch(e) { console.error("DB save error:", e); }
+}
 
-function updateStats(){
+async function deleteVehicleFromDb(vin) {
+try { await deleteDoc(doc(db, "vehicles", vin)); } catch(e) {}
+}
+
+async function loadFromDb() {
+try {
+const snap = await getDocs(collection(db, "vehicles"));
+const data = [];
+snap.forEach(function(d){ data.push(d.data()); });
+return data;
+} catch(e) { console.error("DB load error:", e); return []; }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+document.getElementById("fb-status").textContent = "⟳ Loading from database…";
+const dbVehicles = await loadFromDb();
+if (dbVehicles.length > 0) {
+vehicles = dbVehicles;
+document.getElementById("fb-status").textContent = "✓ Database connected";
+dbReady = true;
+updateStats(); renderList();
+} else {
+document.getElementById("fb-status").textContent = "✓ Database connected — syncing feed…";
+dbReady = true;
+}
+syncFeed();
+}
+
+function findV(vin) { return vehicles.find(function(v){ return v.vin===vin; }); }
+
+function updateStats() {
 document.getElementById("s-total").textContent = vehicles.length;
-document.getElementById("s-pending").textContent = vehicles.filter(v=>v.inspStatus==="Pending Inspection").length;
-document.getElementById("s-insp").textContent = vehicles.filter(v=>v.inspStatus==="Inspected").length;
-document.getElementById("s-psvc").textContent = vehicles.filter(v=>v.svcStatus==="Pending Service").length;
-document.getElementById("s-insvc").textContent = vehicles.filter(v=>v.svcStatus==="In-Service").length;
-document.getElementById("s-svc").textContent = vehicles.filter(v=>v.svcStatus==="Serviced").length;
-const tot=vehicles.reduce((s,v)=>s+(v.parts||[]).reduce((ps,p)=>ps+(parseFloat(p.cost)||0),0),0);
+document.getElementById("s-pending").textContent = vehicles.filter(function(v){ return v.inspStatus==="Pending Inspection"; }).length;
+document.getElementById("s-insp").textContent = vehicles.filter(function(v){ return v.inspStatus==="Inspected"; }).length;
+document.getElementById("s-psvc").textContent = vehicles.filter(function(v){ return v.svcStatus==="Pending Service"; }).length;
+document.getElementById("s-insvc").textContent = vehicles.filter(function(v){ return v.svcStatus==="In-Service"; }).length;
+document.getElementById("s-svc").textContent = vehicles.filter(function(v){ return v.svcStatus==="Serviced"; }).length;
+var tot=vehicles.reduce(function(s,v){ return s+(v.parts||[]).reduce(function(ps,p){ return ps+(parseFloat(p.cost)||0); },0); },0);
 document.getElementById("s-cost").textContent = "$"+Math.round(tot).toLocaleString();
 document.getElementById("header-sub").textContent = vehicles.length+" vehicles · Last sync: "+(lastSync||"never");
 }
 
-async function syncFeed(){
-const btn=document.getElementById("sync-btn"), icon=document.getElementById("sync-icon");
-const st=document.getElementById("sync-status");
+// ── Sync feed ──────────────────────────────────────────────────────────────
+window.syncFeed = async function() {
+var btn=document.getElementById("sync-btn"), icon=document.getElementById("sync-icon");
+var st=document.getElementById("sync-status");
 btn.disabled=true; icon.innerHTML='<span class="spin">⟳</span>';
 st.className="sync-status info"; st.style.display="block";
 st.textContent="Fetching live inventory from AutoManager…";
-try{
-const res = await fetch(PROXY_URL);
-const data = await res.json();
+try {
+var res = await fetch(PROXY_URL);
+var data = await res.json();
 if(data.error) throw new Error(data.error);
-const feed = data.vehicles;
+var feed = data.vehicles;
 if(!feed||!feed.length) throw new Error("No vehicles returned from feed.");
-const feedVINs = new Set(feed.map(v=>v.vin));
-const existVINs = new Set(vehicles.map(v=>v.vin));
-let added=0, marked=0;
-vehicles.forEach(v=>{
+var feedVINs = new Set(feed.map(function(v){ return v.vin; }));
+var existVINs = new Set(vehicles.map(function(v){ return v.vin; }));
+var added=0, marked=0;
+var savePromises = [];
+vehicles.forEach(function(v){
 if(v.vin&&!feedVINs.has(v.vin)&&v.inspStatus!=="Sold"){
 v.inspStatus="Sold"; v.svcStatus="Sold"; marked++;
+savePromises.push(saveVehicleToDb(v));
 }
 });
-feed.forEach(fv=>{
+feed.forEach(function(fv){
 if(!fv.vin) return;
 if(!existVINs.has(fv.vin)){
-vehicles.push({
+var newV = {
 vin:fv.vin, year:fv.year||"", make:fv.make||"", model:fv.model||"",
 mileage:fv.mileage||0, stock:fv.stock||"", color:fv.color||"",
 dateAdded:fv.createdDate||new Date().toISOString().split("T")[0],
 inspStatus:"Pending Inspection", svcStatus:"Pending Service",
 interior:"", exterior:"", mechanical:"", parts:[], notes:""
-});
+};
+vehicles.push(newV);
+savePromises.push(saveVehicleToDb(newV));
 added++;
 } else {
-const ex=findV(fv.vin);
+var ex=findV(fv.vin);
 if(ex){
 ex.year=fv.year||ex.year; ex.make=fv.make||ex.make;
 ex.model=fv.model||ex.model; ex.mileage=fv.mileage||ex.mileage;
@@ -288,18 +344,20 @@ if(ex.inspStatus==="Sold"){ ex.inspStatus="Pending Inspection"; ex.svcStatus="Pe
 }
 }
 });
-saveLocal(); lastSync=new Date().toLocaleTimeString();
+await Promise.all(savePromises);
+lastSync=new Date().toLocaleTimeString();
 st.className="sync-status success";
 st.textContent="✓ "+feed.length+" vehicles synced · "+added+" new · "+marked+" marked sold";
-setTimeout(()=>{ st.style.display="none"; },5000);
+setTimeout(function(){ st.style.display="none"; },5000);
 } catch(e){
 st.className="sync-status error";
 st.textContent="⚠ Sync failed: "+e.message;
 }
 btn.disabled=false; icon.innerHTML="⟳";
 updateStats(); renderList();
-}
+};
 
+// ── List ───────────────────────────────────────────────────────────────────
 function getIB(v){
 if(v.inspStatus==="Sold") return {cls:"badge-sold", label:"Sold"};
 if(v.inspStatus==="Inspected") return {cls:"badge-inspected",label:"Inspected"};
@@ -308,7 +366,6 @@ if((v.parts||[]).length>0) return {cls:"badge-parts", label:"Parts"};
 if(v.interior||v.exterior||v.mechanical) return {cls:"badge-inspected",label:"Inspected"};
 return {cls:"badge-pending",label:"Pending"};
 }
-
 function getSB(v){
 if(v.svcStatus==="Sold") return {cls:"badge-sold", label:"Sold"};
 if(v.svcStatus==="Serviced") return {cls:"badge-serviced",label:"Serviced"};
@@ -316,190 +373,229 @@ if(v.svcStatus==="In-Service") return {cls:"badge-insvc", label:"In-Svc"};
 return {cls:"badge-pend-svc",label:"Pend.Svc"};
 }
 
-function renderList(){
-const q=(document.getElementById("search-input").value||"").toLowerCase();
-const fi=document.getElementById("filter-insp").value;
-const fs=document.getElementById("filter-svc").value;
-const sv=document.getElementById("sort-sel").value;
-const sorted=[...vehicles].sort((a,b)=>{
-const as=a.inspStatus==="Sold"?1:0, bs=b.inspStatus==="Sold"?1:0;
+window.renderList = function() {
+var q=(document.getElementById("search-input").value||"").toLowerCase();
+var fi=document.getElementById("filter-insp").value;
+var fs=document.getElementById("filter-svc").value;
+var sv=document.getElementById("sort-sel").value;
+var sorted=vehicles.slice().sort(function(a,b){
+var as=a.inspStatus==="Sold"?1:0, bs=b.inspStatus==="Sold"?1:0;
 if(as!==bs) return as-bs;
 switch(sv){
-case "date-asc": return new Date(a.dateAdded||0) - new Date(b.dateAdded||0);M
+case "date-asc": return new Date(a.dateAdded||0)-new Date(b.dateAdded||0);
 case "year-desc": return (b.year||0)-(a.year||0);
 case "year-asc": return (a.year||0)-(b.year||0);
 case "make-asc": return (a.make||"").localeCompare(b.make||"");
 case "make-desc": return (b.make||"").localeCompare(a.make||"");
 case "mileage-asc": return (a.mileage||0)-(b.mileage||0);
 case "mileage-desc": return (b.mileage||0)-(a.mileage||0);
-default: return new Date(b.dateAdded||0) - new Date(a.dateAdded||0);
+default: return new Date(b.dateAdded||0)-new Date(a.dateAdded||0);
 }
 });
-const filtered=sorted.filter(v=>{
-const txt=`${v.vin} ${v.make} ${v.model} ${v.stock} ${v.year} ${v.color}`.toLowerCase();
-if(q&&!txt.includes(q)) return false;
+var filtered=sorted.filter(function(v){
+var txt=(v.vin+" "+v.make+" "+v.model+" "+v.stock+" "+v.year+" "+v.color).toLowerCase();
+if(q&&txt.indexOf(q)<0) return false;
 if(fi&&v.inspStatus!==fi) return false;
 if(fs&&v.svcStatus!==fs) return false;
 return true;
 });
-const list=document.getElementById("vehicle-list");
+var list=document.getElementById("vehicle-list");
 if(!filtered.length){
 list.innerHTML=!vehicles.length
-?'<div class="empty-state"><div class="e-icon">🚗</div><p>No vehicles yet.</p><p style="font-size:12px;margin-top:6px">Tap <strong>Sync Feed</strong> to load your AutoManager inventory.</p></div>'
+?'<div class="empty-state"><div class="e-icon">🚗</div><p>No vehicles yet.</p><p style="font-size:12px;margin-top:6px">Tap <strong>Sync Feed</strong> to load your inventory.</p></div>'
 :'<div class="empty-state"><div class="e-icon">🔍</div><p>No vehicles match your search.</p></div>';
 updateStats(); return;
 }
-list.innerHTML=filtered.map(v=>{
-const ib=getIB(v), sb=getSB(v);
-const mil=v.mileage?Number(v.mileage).toLocaleString()+" mi":"";
-return '<div class="v-card" onclick="openDetail(\''+esc(v.vin)+'\')">'+
-'<div class="v-card-header">'+
-'<div class="v-icon '+(v.inspStatus==="Sold"?"sold-icon":"")+'">🚙</div>'+
-'<div class="v-info">'+
-'<div class="v-name">'+v.year+' '+esc(v.make)+' '+esc(v.model)+'</div>'+
-'<div class="v-meta">'+[mil,v.stock?"#"+v.stock:"",v.color].filter(Boolean).join(" · ")+'</div>'+
-'</div>'+
-'<div class="v-badges">'+
-'<span class="badge '+ib.cls+'">'+ib.label+'</span>'+
-'<span class="badge '+sb.cls+'">'+sb.label+'</span>'+
-'</div>'+
-'<span class="v-arrow">›</span>'+
-'</div></div>';
+list.innerHTML=filtered.map(function(v){
+var ib=getIB(v), sb=getSB(v);
+var mil=v.mileage?Number(v.mileage).toLocaleString()+" mi":"";
+return '<div class="v-card" onclick="openDetail(\''+esc(v.vin)+'\')">'
++'<div class="v-card-header">'
++'<div class="v-icon '+(v.inspStatus==="Sold"?"sold-icon":"")+'">🚙</div>'
++'<div class="v-info">'
++'<div class="v-name">'+v.year+' '+esc(v.make)+' '+esc(v.model)+'</div>'
++'<div class="v-meta">'+[mil,v.stock?"#"+v.stock:"",v.color].filter(Boolean).join(" · ")+'</div>'
++'</div>'
++'<div class="v-badges">'
++'<span class="badge '+ib.cls+'">'+ib.label+'</span>'
++'<span class="badge '+sb.cls+'">'+sb.label+'</span>'
++'</div>'
++'<span class="v-arrow">›</span>'
++'</div></div>';
 }).join("");
 updateStats();
-}
+};
 
-function openDetail(vin){
-currentVIN=vin; const v=findV(vin); if(!v) return;
+// ── Detail ─────────────────────────────────────────────────────────────────
+window.openDetail = function(vin){
+currentVIN=vin; var v=findV(vin); if(!v) return;
 document.getElementById("view-list").classList.remove("active");
 document.getElementById("view-detail").classList.add("active");
 window.scrollTo(0,0);
 document.getElementById("d-title").textContent=v.year+" "+v.make+" "+v.model;
 document.getElementById("d-sub").textContent="VIN: "+v.vin+" · Stock: "+(v.stock||"—")+" · "+(v.mileage?Number(v.mileage).toLocaleString()+" mi":"");
 renderDetail(v);
-}
+};
 
 function renderDetail(v){
-const iO=["Pending Inspection","Inspected","Parts Logged","Sold"];
-const sO=["Pending Service","In-Service","Serviced","Sold"];
-const cur_i=v.inspStatus||"Pending Inspection";
-const cur_s=v.svcStatus||"Pending Service";
-const iB=iO.map(function(o,i){ return '<button class="tog-btn'+(cur_i===o?" ai"+i:"")+'" onclick="setInsp(\''+o+'\')">'+o+'</button>'; }).join("");
-const sB=sO.map(function(o,i){ return '<button class="tog-btn'+(cur_s===o?" as"+i:"")+'" onclick="setSvc(\''+o+'\')">'+o+'</button>'; }).join("");
-const pH=(v.parts||[]).map(function(p,pi){
-return '<div class="part-row">'+
-'<input type="text" value="'+esc(p.desc||"")+'" placeholder="Description" onchange="updatePart('+pi+',\'desc\',this.value)">'+
-'<input type="text" value="'+esc(p.num||"")+'" placeholder="Part #" onchange="updatePart('+pi+',\'num\',this.value)">'+
-'<input type="number" value="'+(p.cost||"")+'" placeholder="0.00" step="0.01" onchange="updatePart('+pi+',\'cost\',this.value)">'+
-'<button class="del-part" onclick="deletePart('+pi+')">🗑</button>'+
-'</div>';
+var iO=["Pending Inspection","Inspected","Parts Logged","Sold"];
+var sO=["Pending Service","In-Service","Serviced","Sold"];
+var cur_i=v.inspStatus||"Pending Inspection";
+var cur_s=v.svcStatus||"Pending Service";
+var iB=iO.map(function(o,i){ return '<button class="tog-btn'+(cur_i===o?" ai"+i:"")+'" onclick="setInsp(\''+o+'\')">'+o+'</button>'; }).join("");
+var sB=sO.map(function(o,i){ return '<button class="tog-btn'+(cur_s===o?" as"+i:"")+'" onclick="setSvc(\''+o+'\')">'+o+'</button>'; }).join("");
+var pH=(v.parts||[]).map(function(p,pi){
+return '<div class="part-row">'
++'<input type="text" value="'+esc(p.desc||"")+'" placeholder="Description" onchange="updatePart('+pi+',\'desc\',this.value)">'
++'<input type="text" value="'+esc(p.num||"")+'" placeholder="Part #" onchange="updatePart('+pi+',\'num\',this.value)">'
++'<input type="number" value="'+(p.cost||"")+'" placeholder="0.00" step="0.01" onchange="updatePart('+pi+',\'cost\',this.value)">'
++'<button class="del-part" onclick="deletePart('+pi+')">🗑</button>'
++'</div>';
 }).join("");
-const pT=(v.parts||[]).reduce(function(s,p){ return s+(parseFloat(p.cost)||0); },0);
+var pT=(v.parts||[]).reduce(function(s,p){ return s+(parseFloat(p.cost)||0); },0);
 document.getElementById("detail-body").innerHTML=
-'<div class="info-grid">'+
-'<div class="info-cell"><div class="lbl">VIN</div><div class="val" style="font-size:11px;font-family:monospace">'+esc(v.vin)+'</div></div>'+
-'<div class="info-cell"><div class="lbl">Stock #</div><div class="val">'+esc(v.stock||"—")+'</div></div>'+
-'<div class="info-cell"><div class="lbl">Year / Make</div><div class="val">'+v.year+' '+esc(v.make)+'</div></div>'+
-'<div class="info-cell"><div class="lbl">Model</div><div class="val">'+esc(v.model)+'</div></div>'+
-'<div class="info-cell"><div class="lbl">Mileage</div><div class="val">'+(v.mileage?Number(v.mileage).toLocaleString()+" mi":"—")+'</div></div>'+
-'<div class="info-cell"><div class="lbl">Color</div><div class="val">'+esc(v.color||"—")+'</div></div>'+
-'<div class="info-cell"><div class="lbl">Date Added</div><div class="val">'+esc(v.dateAdded||"—")+'</div></div>'+
-'<div class="info-cell"><div class="lbl">Parts Total</div><div class="val">$'+pT.toFixed(2)+'</div></div>'+
-'</div>'+
-'<div class="section-card"><div class="section-hdr stat-sec"><span class="s-icon">📋</span><span class="s-title">Status</span></div>'+
-'<div class="section-body">'+
-'<div class="toggle-lbl">Inspection</div><div class="toggle-group">'+iB+'</div>'+
-'<div class="toggle-lbl">Service</div><div class="toggle-group">'+sB+'</div>'+
-'</div></div>'+
-'<div class="section-card"><div class="section-hdr int"><span class="s-icon">🪑</span><span class="s-title">Interior</span></div>'+
-'<div class="section-body"><textarea class="insp" id="f-interior" placeholder="Describe interior issues…">'+esc(v.interior||"")+'</textarea></div></div>'+
-'<div class="section-card"><div class="section-hdr ext"><span class="s-icon">🚗</span><span class="s-title">Exterior</span></div>'+
-'<div class="section-body"><textarea class="insp" id="f-exterior" placeholder="Describe exterior issues…">'+esc(v.exterior||"")+'</textarea></div></div>'+
-'<div class="section-card"><div class="section-hdr mech"><span class="s-icon">🔧</span><span class="s-title">Mechanical</span></div>'+
-'<div class="section-body"><textarea class="insp" id="f-mechanical" placeholder="Describe mechanical issues…">'+esc(v.mechanical||"")+'</textarea></div></div>'+
-'<div class="section-card"><div class="section-hdr parts"><span class="s-icon">📦</span><span class="s-title">Parts &amp; Costs</span></div>'+
-'<div class="section-body">'+
-((v.parts||[]).length?'<div class="part-row-hdr"><span>Description</span><span>Part #</span><span>Cost</span><span></span></div>':"")+
-'<div class="parts-grid">'+pH+'</div>'+
-'<button class="add-part-btn" onclick="addPart()">+ Add part</button>'+
-((v.parts||[]).length?'<div class="parts-total">Total: <strong>$'+pT.toFixed(2)+'</strong></div>':"")+
-'</div></div>'+
-'<div class="section-card"><div class="section-hdr notes-sec"><span class="s-icon">📝</span><span class="s-title">General Notes</span></div>'+
-'<div class="section-body"><textarea class="insp" id="f-notes" placeholder="Any additional notes…" style="min-height:56px">'+esc(v.notes||"")+'</textarea></div></div>'+
-'<div class="save-bar">'+
-'<button class="save-main" onclick="saveDetail()">Save</button>'+
-'<span class="saved-msg" id="saved-msg">✓ Saved</span>'+
-'<button class="del-vehicle" onclick="deleteVehicle()">Remove</button>'+
-'</div>';
+'<div class="info-grid">'
++'<div class="info-cell"><div class="lbl">VIN</div><div class="val" style="font-size:11px;font-family:monospace">'+esc(v.vin)+'</div></div>'
++'<div class="info-cell"><div class="lbl">Stock #</div><div class="val">'+esc(v.stock||"—")+'</div></div>'
++'<div class="info-cell"><div class="lbl">Year / Make</div><div class="val">'+v.year+' '+esc(v.make)+'</div></div>'
++'<div class="info-cell"><div class="lbl">Model</div><div class="val">'+esc(v.model)+'</div></div>'
++'<div class="info-cell"><div class="lbl">Mileage</div><div class="val">'+(v.mileage?Number(v.mileage).toLocaleString()+" mi":"—")+'</div></div>'
++'<div class="info-cell"><div class="lbl">Color</div><div class="val">'+esc(v.color||"—")+'</div></div>'
++'<div class="info-cell"><div class="lbl">Date Added</div><div class="val">'+esc(v.dateAdded||"—")+'</div></div>'
++'<div class="info-cell"><div class="lbl">Parts Total</div><div class="val" id="parts-total-display">$'+pT.toFixed(2)+'</div></div>'
++'</div>'
++'<div class="section-card"><div class="section-hdr stat-sec"><span class="s-icon">📋</span><span class="s-title">Status</span></div>'
++'<div class="section-body">'
++'<div class="toggle-lbl">Inspection</div><div class="toggle-group" id="insp-grp">'+iB+'</div>'
++'<div class="toggle-lbl">Service</div><div class="toggle-group" id="svc-grp">'+sB+'</div>'
++'</div></div>'
++'<div class="section-card"><div class="section-hdr int"><span class="s-icon">🪑</span><span class="s-title">Interior</span></div>'
++'<div class="section-body"><textarea class="insp" id="f-interior" placeholder="Describe interior issues…">'+esc(v.interior||"")+'</textarea></div></div>'
++'<div class="section-card"><div class="section-hdr ext"><span class="s-icon">🚗</span><span class="s-title">Exterior</span></div>'
++'<div class="section-body"><textarea class="insp" id="f-exterior" placeholder="Describe exterior issues…">'+esc(v.exterior||"")+'</textarea></div></div>'
++'<div class="section-card"><div class="section-hdr mech"><span class="s-icon">🔧</span><span class="s-title">Mechanical</span></div>'
++'<div class="section-body"><textarea class="insp" id="f-mechanical" placeholder="Describe mechanical issues…">'+esc(v.mechanical||"")+'</textarea></div></div>'
++'<div class="section-card"><div class="section-hdr parts"><span class="s-icon">📦</span><span class="s-title">Parts &amp; Costs</span></div>'
++'<div class="section-body">'
++((v.parts||[]).length?'<div class="part-row-hdr"><span>Description</span><span>Part #</span><span>Cost</span><span></span></div>':"")
++'<div class="parts-grid">'+pH+'</div>'
++'<button class="add-part-btn" onclick="addPart()">+ Add part</button>'
++((v.parts||[]).length?'<div class="parts-total">Total: <strong id="parts-total-val">$'+pT.toFixed(2)+'</strong></div>':"")
++'</div></div>'
++'<div class="section-card"><div class="section-hdr notes-sec"><span class="s-icon">📝</span><span class="s-title">General Notes</span></div>'
++'<div class="section-body"><textarea class="insp" id="f-notes" placeholder="Any additional notes…" style="min-height:56px">'+esc(v.notes||"")+'</textarea></div></div>'
++'<div class="save-bar">'
++'<button class="save-main" onclick="saveDetail()">Save</button>'
++'<span class="saved-msg" id="saved-msg">✓ Saved</span>'
++'<button class="del-vehicle" onclick="deleteVehicle()">Remove</button>'
++'</div>';
 }
 
-function setInsp(val){
-const v=findV(currentVIN); if(!v) return;
-saveDetail();
-v.inspStatus=val; saveLocal(); updateStats(); renderList();
-document.querySelectorAll(".toggle-group")[0].querySelectorAll(".tog-btn").forEach(function(btn,i){
-btn.className="tog-btn"+(btn.textContent===val?" ai"+i:"");
-});
+function collectFields(v){
+var fi=document.getElementById("f-interior");
+var fe=document.getElementById("f-exterior");
+var fm=document.getElementById("f-mechanical");
+var fn=document.getElementById("f-notes");
+if(fi) v.interior=fi.value;
+if(fe) v.exterior=fe.value;
+if(fm) v.mechanical=fm.value;
+if(fn) v.notes=fn.value;
 }
-function setSvc(val){
-const v=findV(currentVIN); if(!v) return;
-saveDetail();
-v.svcStatus=val; saveLocal(); updateStats(); renderList();
-document.querySelectorAll(".toggle-group")[1].querySelectorAll(".tog-btn").forEach(function(btn,i){
-btn.className="tog-btn"+(btn.textContent===val?" as"+i:"");
-});
-}
-function updatePart(pi,f,val){
-const v=findV(currentVIN); if(!v||!v.parts[pi]) return;
-v.parts[pi][f]=val;
-saveLocal();
-const pT=(v.parts||[]).reduce(function(s,p){ return s+(parseFloat(p.cost)||0); },0);
-const totEl=document.querySelector(".parts-total strong");
-if(totEl) totEl.textContent="$"+pT.toFixed(2);
-const infoEl=document.querySelectorAll(".info-cell .val");
-if(infoEl[7]) infoEl[7].textContent="$"+pT.toFixed(2);
-updateStats();
-}function addPart(){ const v=findV(currentVIN); if(!v) return; if(!v.parts)v.parts=[]; v.parts.push({desc:"",num:"",cost:""}); saveLocal(); renderDetail(v); }
-function deletePart(pi){ const v=findV(currentVIN); if(!v) return; v.parts.splice(pi,1); saveLocal(); renderDetail(v); }
-function saveDetail(){
-const v=findV(currentVIN); if(!v) return;
-var interior=document.getElementById("f-interior");
-var exterior=document.getElementById("f-exterior");
-var mechanical=document.getElementById("f-mechanical");
-var notes=document.getElementById("f-notes");
-if(interior && interior.value !== "") v.interior=interior.value;
-if(exterior && exterior.value !== "") v.exterior=exterior.value;
-if(mechanical && mechanical.value !== "") v.mechanical=mechanical.value;
-if(notes && notes.value !== "") v.notes=notes.value;
-saveLocal();
-const m=document.getElementById("saved-msg");
+
+window.saveDetail = async function(){
+var v=findV(currentVIN); if(!v) return;
+collectFields(v);
+await saveVehicleToDb(v);
+var m=document.getElementById("saved-msg");
 if(m){ m.style.display="inline"; setTimeout(function(){ m.style.display="none"; },2000); }
-}
-function deleteVehicle(){ if(!confirm("Remove this vehicle?")) return; vehicles=vehicles.filter(function(v){ return v.vin!==currentVIN; }); saveLocal(); goBack(); }
-function goBack(){
-saveDetail();
+updateStats(); renderList();
+};
+
+window.setInsp = async function(val){
+var v=findV(currentVIN); if(!v) return;
+collectFields(v);
+v.inspStatus=val;
+await saveVehicleToDb(v);
+var grp=document.getElementById("insp-grp");
+if(grp){ var btns=grp.querySelectorAll(".tog-btn"); btns.forEach(function(btn,i){ btn.className="tog-btn"+(btn.textContent===val?" ai"+i:""); }); }
+updateStats(); renderList();
+};
+
+window.setSvc = async function(val){
+var v=findV(currentVIN); if(!v) return;
+collectFields(v);
+v.svcStatus=val;
+await saveVehicleToDb(v);
+var grp=document.getElementById("svc-grp");
+if(grp){ var btns=grp.querySelectorAll(".tog-btn"); btns.forEach(function(btn,i){ btn.className="tog-btn"+(btn.textContent===val?" as"+i:""); }); }
+updateStats(); renderList();
+};
+
+window.updatePart = function(pi,f,val){
+var v=findV(currentVIN); if(!v||!v.parts[pi]) return;
+v.parts[pi][f]=val;
+var pT=(v.parts||[]).reduce(function(s,p){ return s+(parseFloat(p.cost)||0); },0);
+var tv=document.getElementById("parts-total-val");
+var td=document.getElementById("parts-total-display");
+if(tv) tv.textContent="$"+pT.toFixed(2);
+if(td) td.textContent="$"+pT.toFixed(2);
+updateStats();
+saveVehicleToDb(v);
+};
+
+window.addPart = function(){
+var v=findV(currentVIN); if(!v) return;
+if(!v.parts) v.parts=[];
+collectFields(v);
+v.parts.push({desc:"",num:"",cost:""});
+saveVehicleToDb(v);
+renderDetail(v);
+};
+
+window.deletePart = function(pi){
+var v=findV(currentVIN); if(!v) return;
+collectFields(v);
+v.parts.splice(pi,1);
+saveVehicleToDb(v);
+renderDetail(v);
+};
+
+window.deleteVehicle = async function(){
+if(!confirm("Remove this vehicle?")) return;
+await deleteVehicleFromDb(currentVIN);
+vehicles=vehicles.filter(function(v){ return v.vin!==currentVIN; });
+goBack();
+};
+
+window.goBack = function(){
+var v=findV(currentVIN);
+if(v){ collectFields(v); saveVehicleToDb(v); }
 currentVIN=null;
 document.getElementById("view-detail").classList.remove("active");
 document.getElementById("view-list").classList.add("active");
 renderList();
-}
-function markAllDone(){
+};
+
+window.markAllDone = async function(){
 if(!confirm("Mark all current vehicles as Inspected and Serviced?\n\nNew vehicles added in future syncs will still start as Pending.")) return;
 var count=0;
+var promises=[];
 vehicles.forEach(function(v){
-if(v.inspStatus!=="Sold"){ v.inspStatus="Inspected"; count++; }
-if(v.svcStatus!=="Sold"){ v.svcStatus="Serviced"; }
+if(v.inspStatus!=="Sold"){ v.inspStatus="Inspected"; v.svcStatus="Serviced"; count++; promises.push(saveVehicleToDb(v)); }
 });
-saveLocal(); updateStats(); renderList();
+await Promise.all(promises);
+updateStats(); renderList();
 alert("Done! "+count+" vehicles marked as Inspected and Serviced.");
-}
-function openAddModal(){ document.getElementById("add-modal").classList.add("open"); }
-function closeAddModal(){ document.getElementById("add-modal").classList.remove("open"); }
-function addManual(){
+};
+
+window.openAddModal = function(){ document.getElementById("add-modal").classList.add("open"); };
+window.closeAddModal = function(){ document.getElementById("add-modal").classList.remove("open"); };
+
+window.addManual = async function(){
 var make=document.getElementById("m-make").value.trim();
 var model=document.getElementById("m-model").value.trim();
 if(!make||!model){ alert("Make and model are required."); return; }
-vehicles.push({
+var newV={
 vin:document.getElementById("m-vin").value.trim()||"MANUAL-"+Date.now(),
 year:parseInt(document.getElementById("m-year").value)||"", make:make, model:model,
 mileage:parseInt(document.getElementById("m-mileage").value)||0,
@@ -508,13 +604,18 @@ color:document.getElementById("m-color").value.trim(),
 dateAdded:new Date().toISOString().split("T")[0],
 inspStatus:"Pending Inspection", svcStatus:"Pending Service",
 interior:"", exterior:"", mechanical:"", parts:[], notes:""
-});
-saveLocal(); closeAddModal();
+};
+vehicles.push(newV);
+await saveVehicleToDb(newV);
+closeAddModal();
 ["m-year","m-make","m-model","m-mileage","m-vin","m-stock","m-color"].forEach(function(id){ document.getElementById(id).value=""; });
 renderList();
-}
+};
+
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-loadLocal(); renderList(); updateStats(); syncFeed();
+window.esc = esc;
+
+init();
 </script>
 </body>
 </html>
