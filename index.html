@@ -313,11 +313,22 @@ function renderList(){
   const q=(document.getElementById("search-input").value||"").toLowerCase();
   const fi=document.getElementById("filter-insp").value;
   const fs=document.getElementById("filter-svc").value;
-  const sorted=[...vehicles].sort((a,b)=>{
-    const as=a.inspStatus==="Sold"?1:0, bs=b.inspStatus==="Sold"?1:0;
-    if(as!==bs) return as-bs;
-    return (b.dateAdded||"").localeCompare(a.dateAdded||"");
-  });
+  const sortVal = document.getElementById("sort-sel").value;
+const sorted=[...vehicles].sort((a,b)=>{
+const as=a.inspStatus==="Sold"?1:0, bs=b.inspStatus==="Sold"?1:0;
+if(as!==bs) return as-bs;
+switch(sortVal){
+case "date-asc": return (a.dateAdded||"").localeCompare(b.dateAdded||"");
+case "year-desc": return (b.year||0)-(a.year||0);
+case "year-asc": return (a.year||0)-(b.year||0);
+case "make-asc": return (a.make||"").localeCompare(b.make||"");
+case "make-desc": return (b.make||"").localeCompare(a.make||"");
+case "mileage-asc": return (a.mileage||0)-(b.mileage||0);
+case "mileage-desc": return (b.mileage||0)-(a.mileage||0);
+case "status-asc": return (a.inspStatus||"").localeCompare(b.inspStatus||"");
+default: return (b.dateAdded||"").localeCompare(a.dateAdded||"");
+}
+});
   const filtered=sorted.filter(v=>{
     const txt=`${v.vin} ${v.make} ${v.model} ${v.stock} ${v.year} ${v.color}`.toLowerCase();
     if(q&&!txt.includes(q)) return false;
