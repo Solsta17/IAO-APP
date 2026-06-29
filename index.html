@@ -145,9 +145,33 @@ textarea.insp:focus { border-color:var(--blue); background:var(--white); }
 .modal-foot button { font-size:13px; padding:8px 16px; border-radius:8px; cursor:pointer; border:1px solid var(--border); background:var(--bg); }
 .modal-foot .btn-primary { background:var(--navy-mid); color:#fff; border-color:var(--navy-mid); }
 .fb-status { font-size:10px; color:#94A3B8; margin-top:2px; }
+
+.pin-overlay { position:fixed; inset:0; background:var(--navy); z-index:999; display:flex; align-items:center; justify-content:center; }
+.pin-box { background:var(--white); border-radius:16px; padding:32px 24px; width:100%; max-width:320px; text-align:center; box-shadow:var(--shadow-md); }
+.pin-logo { font-size:36px; margin-bottom:12px; }
+.pin-title { font-size:18px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+.pin-sub { font-size:13px; color:var(--muted); margin-bottom:24px; }
+.pin-input { width:100%; border:2px solid var(--border); border-radius:10px; padding:14px; font-size:24px; text-align:center; letter-spacing:8px; outline:none; font-family:monospace; }
+.pin-input:focus { border-color:var(--blue); }
+.pin-btn { width:100%; background:var(--navy-mid); color:#fff; border:none; border-radius:10px; padding:13px; font-size:15px; font-weight:600; cursor:pointer; margin-top:12px; }
+.pin-btn:hover { background:var(--navy); }
+.pin-error { color:var(--red); font-size:13px; margin-top:10px; display:none; }
+
 </style>
 </head>
 <body>
+
+
+<div class="pin-overlay" id="pin-overlay">
+<div class="pin-box">
+<div class="pin-logo">🚗</div>
+<div class="pin-title">IAO Inspection Manager</div>
+<div class="pin-sub">Enter your PIN to continue</div>
+<input class="pin-input" id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="····" onkeydown="if(event.key==='Enter')checkPin()">
+<button class="pin-btn" onclick="checkPin()">Unlock</button>
+<div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
+</div>
+</div>
 
 <div id="view-list" class="view active">
 <div class="app-header">
@@ -646,6 +670,30 @@ renderList();
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 window.esc = esc;
 
+
+function checkPin(){
+var input=document.getElementById("pin-input");
+var error=document.getElementById("pin-error");
+if(input.value==="2344"){
+document.getElementById("pin-overlay").style.display="none";
+sessionStorage.setItem("iao_auth","1");
+} else {
+error.style.display="block";
+input.value="";
+input.focus();
+setTimeout(function(){ error.style.display="none"; },2000);
+}
+}
+function checkAuth(){
+if(sessionStorage.getItem("iao_auth")!=="1"){
+document.getElementById("pin-overlay").style.display="flex";
+setTimeout(function(){ document.getElementById("pin-input").focus(); },100);
+} else {
+document.getElementById("pin-overlay").style.display="none";
+}
+}
+
+checkAuth();
 init();
 </script>
 </body>
