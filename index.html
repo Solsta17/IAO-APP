@@ -455,10 +455,10 @@ updateStats();
 function deletePart(pi){ const v=findV(currentVIN); if(!v) return; v.parts.splice(pi,1); saveLocal(); renderDetail(v); }
 function saveDetail(){
 const v=findV(currentVIN); if(!v) return;
-v.interior =document.getElementById("f-interior") ?document.getElementById("f-interior").value :v.interior;
-v.exterior =document.getElementById("f-exterior") ?document.getElementById("f-exterior").value :v.exterior;
+v.interior=document.getElementById("f-interior") ?document.getElementById("f-interior").value :v.interior;
+v.exterior=document.getElementById("f-exterior") ?document.getElementById("f-exterior").value :v.exterior;
 v.mechanical=document.getElementById("f-mechanical")?document.getElementById("f-mechanical").value:v.mechanical;
-v.notes =document.getElementById("f-notes") ?document.getElementById("f-notes").value :v.notes;
+v.notes=document.getElementById("f-notes") ?document.getElementById("f-notes").value :v.notes;
 saveLocal();
 const m=document.getElementById("saved-msg");
 if(m){ m.style.display="inline"; setTimeout(function(){ m.style.display="none"; },2000); }
